@@ -1,7 +1,7 @@
 //path : web-frontend/app/login/login.tsx
 "use client"
 import { useState, useEffect, useRef } from "react";
-import BASE_URL from "../lib/api";
+import { api, ApiError } from "../lib/api";
 const MAP_PATH =
   "M 43 2 L 52 14 L 62 25 L 85 18 L 105 28 L 128 32 L 138 45 L 148 55 L 165 52 L 182 72 L 188 95 L 175 105 L 185 118 L 168 120 L 155 108 L 138 102 L 125 112 L 105 102 L 85 115 L 70 110 L 58 100 L 52 122 L 45 125 L 40 105 L 35 75 L 28 50 L 22 28 L 32 18 Z";
 
@@ -199,7 +199,7 @@ export default function NammaByndoorLogin() {
     return () => cancelAnimationFrame(raf);
   }, [btnState]);
 
- async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
   e.preventDefault();
 
   if (!username.trim() || !password.trim()) {
@@ -211,40 +211,31 @@ export default function NammaByndoorLogin() {
   setBtnState("loading");
 
   try {
-   const res = await fetch(`${BASE_URL}/api/auth/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username,
-        password,
-      }),
+    const data = await api.post<{
+      token: string;
+      admin: unknown;
+    }>("/api/auth/login", {
+      username,
+      password,
     });
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      setBtnState("idle");
-      setErrorMsg(data.message || "Login Failed");
-      return;
-    }
-
-    // Save Token
     localStorage.setItem("token", data.token);
-
-    // Save Admin
     localStorage.setItem("admin", JSON.stringify(data.admin));
 
     setBtnState("success");
 
     setTimeout(() => {
-      window.location.href = "/admin";
+      window.location.replace("/admin");
     }, 1200);
 
-  } catch (error) {
+  } catch (err) {
     setBtnState("idle");
-    setErrorMsg("Cannot connect to server.");
+
+    if (err instanceof ApiError) {
+      setErrorMsg(err.message);
+    } else {
+      setErrorMsg("Cannot connect to server.");
+    }
   }
 }
   // Stroke dash params

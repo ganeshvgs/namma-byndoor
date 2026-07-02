@@ -5,44 +5,33 @@ import { useEffect, useState } from "react";
 import AdminSidebar from "./AdminSidebar";
 import HeroVideos from "./HeroVideos";
 import { ToastContainer } from "./Toast";
-
-const API = "http://localhost:5000";
+import { api } from "../lib/api";
 
 export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    const verifyAdmin = async () => {
-      const token = localStorage.getItem("token");
+  const verifyAdmin = async () => {
+    const token = localStorage.getItem("token");
 
-      if (!token) {
-        window.location.replace("/login");
-        return;
-      }
+    if (!token) {
+      window.location.replace("/login");
+      return;
+    }
 
-      try {
-        const res = await fetch(`${API}/api/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+    try {
+      await api.get("/api/auth/me");
+      setLoading(false);
+    } catch {
+      localStorage.removeItem("token");
+      localStorage.removeItem("admin");
+      window.location.replace("/login");
+    }
+  };
 
-        if (!res.ok) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("admin");
-          window.location.replace("/login");
-          return;
-        }
-
-        setLoading(false);
-      } catch {
-        window.location.replace("/login");
-      }
-    };
-
-    verifyAdmin();
-  }, []);
+  verifyAdmin();
+}, []);
 
   if (loading) {
     return (
