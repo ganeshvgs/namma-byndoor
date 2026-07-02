@@ -1,8 +1,7 @@
-//path web-frontend/app/components/Loader.tsx
 "use client";
 
 import { useEffect, useRef, useState, memo, useMemo } from "react";
-import { motion, Variants , AnimatePresence } from "framer-motion";
+import { motion, Variants, AnimatePresence } from "framer-motion";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -30,58 +29,39 @@ const LOCATIONS: ReadonlyArray<{
 const MAP_PATH =
   "M 43 2 L 52 14 L 62 25 L 85 18 L 105 28 L 128 32 L 138 45 L 148 55 L 165 52 L 182 72 L 188 95 L 175 105 L 185 118 L 168 120 L 155 108 L 138 102 L 125 112 L 105 102 L 85 115 L 70 110 L 58 100 L 52 122 L 45 125 L 40 105 L 35 75 L 28 50 L 22 28 L 32 18 Z";
 
-// ─── Timeline (all values in seconds unless noted _MS) ────────────────────────
-//
-//  0.00        white screen
-//  0.50        map container starts fading in (0.8s fade+scale)
-//  1.30        map fully visible, empty
-//  1.30        outline starts drawing (3.0s)
-//  4.30        outline fully drawn
-//  4.35        fill starts rising from bottom (1.2s)   [+0.05s gap for clarity]
-//  5.55        fill done
-//  5.55        shading/shadow/glow fade in (0.8s)
-//  6.35        shading done
-//  6.40        markers start appearing (staggered 250ms each)
-//                 5 markers × 250ms → last marker at 6.40 + 1.00 = 7.40
-//  7.80        title appears (1.0s)
-//  8.90        subtitle appears
-//  8.90        progress bar starts
-// 11500ms      loader starts dismissing (progress bar duration = 11.5-8.9 = 2.6s)
-//  0.8s later  homepage revealed
-//
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Timeline (Optimized to ~9.0s for a seamless, continuous flow) ────────────
 
 const T = {
   // map container
-  MAP_FADE_IN:        0.50,
+  MAP_FADE_IN:        0.20,
   MAP_FADE_DUR:       0.80,
 
   // outline draw
-  OUTLINE_START:      1.30,
-  OUTLINE_DUR:        3.00,
+  OUTLINE_START:      0.60,
+  OUTLINE_DUR:        2.20,
 
-  // fill (bottom→top liquid)
-  FILL_START:         4.35,   // strictly after outline (4.30) + small gap
-  FILL_DUR:           1.20,
+  // fill (bottom→top liquid) - Starts slightly before outline finishes to feel continuous
+  FILL_START:         2.60, 
+  FILL_DUR:           1.00,
 
   // terrain shading / depth overlay
-  SHADING_IN:         5.60,   // after fill done (5.55) + 0.05s gap
+  SHADING_IN:         3.40,
   SHADING_DUR:        0.80,
 
   // markers
-  MARKERS_START:      6.40,
-  MARKER_STAGGER:     0.25,
+  MARKERS_START:      3.90,
+  MARKER_STAGGER:     0.15,
 
   // title
-  TITLE_IN:           7.80,
+  TITLE_IN:           4.70,
 
   // subtitle & progress
-  SUBTITLE_IN:        8.90,
-  SUBTITLE_HOLD_MS:   2000,
-  PROGRESS_START:     8.90,
+  SUBTITLE_IN:        5.40,
+  SUBTITLE_HOLD_MS:   1400,
+  PROGRESS_START:     5.40,
 
   // dismiss
-  LOADER_DISMISS_MS:  11500,
+  LOADER_DISMISS_MS:  9000,
   FADE_OUT_DUR:       0.80,
 } as const;
 
@@ -127,10 +107,10 @@ const mapContainerVariants = {
 const titleVariants = {
   hidden: {
     opacity:       0,
-    y:             20,
-    scale:         0.97,
-    filter:        "blur(6px)",
-    letterSpacing: "0.10em",
+    y:             15, // Reduced starting Y for smoother movement
+    scale:         0.98,
+    filter:        "blur(4px)", // Reduced blur for better GPU performance
+    letterSpacing: "0.15em",
   },
   visible: {
     opacity:       1,
@@ -153,7 +133,7 @@ const dividerVariants = {
   visible: {
     scaleX: 1,
     opacity: 1,
-    transition: tr(T.TITLE_IN + 0.5, 0.8, EASE_CINEMATIC),
+    transition: tr(T.TITLE_IN + 0.4, 0.8, EASE_CINEMATIC),
   },
 } as const;
 
@@ -163,9 +143,9 @@ const subtitleContainerVariants = {
 } as const;
 
 const subtitleVariants = {
-  hidden:  { opacity: 0, y: 10, filter: "blur(3px)" },
-  visible: { opacity: 1, y: 0,  filter: "blur(0px)", transition: tr(0, 0.55, EASE_CINEMATIC) },
-  exit:    { opacity: 0, y: -8, filter: "blur(2px)", transition: tr(0, 0.38, EASE_IN_EXPO) },
+  hidden:  { opacity: 0, y: 8, filter: "blur(2px)" },
+  visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: tr(0, 0.55, EASE_OUT_SMOOTH) },
+  exit:    { opacity: 0, y: -8, filter: "blur(2px)", transition: tr(0, 0.4, EASE_OUT_SMOOTH) },
 } as const;
 
 const progressWrapVariants = {
@@ -173,6 +153,7 @@ const progressWrapVariants = {
   visible: { opacity: 1, transition: tr(T.PROGRESS_START, 0.6, "easeOut") },
 } as const;
 
+// Perfectly synced to finish EXACTLY when loader dismisses
 const PROGRESS_DURATION = (T.LOADER_DISMISS_MS / 1000) - T.PROGRESS_START;
 
 const progressBarVariants = {
@@ -244,6 +225,7 @@ function makeMarkerVariants(i: number) {
     },
   };
 }
+
 // ─── LocationMarker ───────────────────────────────────────────────────────────
 
 interface MarkerProps {
@@ -264,7 +246,6 @@ const LocationMarker = memo(function LocationMarker({ loc, index }: MarkerProps)
         variants={v.glow}
         initial="hidden"
         animate="visible"
-        style={{ willChange: "transform, opacity" }}
       />
       {/* One-shot expanding ring */}
       <motion.circle
@@ -275,7 +256,6 @@ const LocationMarker = memo(function LocationMarker({ loc, index }: MarkerProps)
         variants={v.ring}
         initial="hidden"
         animate="visible"
-        style={{ willChange: "transform, opacity" }}
       />
       {/* White outer dot */}
       <motion.circle
@@ -368,7 +348,6 @@ export default function Loader({ onComplete }: LoaderProps) {
             style={{
               width:      "clamp(240px, 36vw, 430px)",
               height:     "clamp(160px, 24vw, 287px)",
-              willChange: "transform, opacity",
             }}
           >
             <svg
@@ -399,6 +378,11 @@ export default function Loader({ onComplete }: LoaderProps) {
                   <path d={MAP_PATH} />
                 </clipPath>
 
+                {/* Optimized GPU blur filters */}
+                <filter id="shadowBlur" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3.5" result="blur" />
+                </filter>
+
                 <filter id="dotGlow" x="-120%" y="-120%" width="340%" height="340%">
                   <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
                 </filter>
@@ -409,7 +393,7 @@ export default function Loader({ onComplete }: LoaderProps) {
                 </filter>
               </defs>
 
-              {/* STEP 4 — terrain fill, rises from bottom after outline finishes */}
+              {/* STEP 4 — terrain fill, rises from bottom */}
               <g clipPath="url(#mapClip)">
                 <motion.rect
                   x={0}
@@ -421,7 +405,6 @@ export default function Loader({ onComplete }: LoaderProps) {
                   transition={{
                     delay:    T.FILL_START,
                     duration: T.FILL_DUR,
-                    // Use a non-overshooting ease so fill never leaks above the clip
                     ease:     EASE_OUT_SMOOTH,
                   }}
                 />
@@ -433,12 +416,12 @@ export default function Loader({ onComplete }: LoaderProps) {
                 animate={{ opacity: 1 }}
                 transition={tr(T.SHADING_IN, T.SHADING_DUR, "easeOut")}
               >
-                {/* Drop shadow */}
+                {/* Drop shadow (Uses hardware accelerated SVG filter instead of CSS filter) */}
                 <path
                   d={MAP_PATH}
                   fill="rgba(2,132,199,0.09)"
                   transform="translate(2, 5)"
-                  style={{ filter: "blur(7px)" }}
+                  filter="url(#shadowBlur)"
                 />
                 {/* Depth overlay */}
                 <rect
@@ -446,7 +429,7 @@ export default function Loader({ onComplete }: LoaderProps) {
                   fill="url(#depthOverlay)"
                   clipPath="url(#mapClip)"
                 />
-                {/* Glowing stroke halo (sits behind the crisp outline) */}
+                {/* Glowing stroke halo */}
                 <path
                   d={MAP_PATH}
                   fill="none"
@@ -458,14 +441,7 @@ export default function Loader({ onComplete }: LoaderProps) {
                 />
               </motion.g>
 
-              {/*
-                STEP 3 — blue outline drawing animation (THE HERO)
-                ─────────────────────────────────────────────────
-                Framer Motion's `pathLength` prop sets strokeDasharray/strokeDashoffset
-                automatically via its internal SVG animation engine.
-                Do NOT put a static strokeDasharray attribute on this element —
-                it will override Framer's computed dash and break the draw.
-              */}
+              {/* STEP 3 — blue outline drawing animation */}
               <motion.path
                 d={MAP_PATH}
                 fill="none"
@@ -487,7 +463,6 @@ export default function Loader({ onComplete }: LoaderProps) {
                     ease:     "easeOut",
                   },
                 }}
-                style={{ willChange: "stroke-dashoffset, opacity" }}
               />
 
               {/* STEP 6 — location markers */}
@@ -509,10 +484,8 @@ export default function Loader({ onComplete }: LoaderProps) {
               style={{
                 fontSize:      "clamp(1.75rem, 4.5vw, 3.25rem)",
                 fontWeight:    900,
-                letterSpacing: "0.22em",
                 textShadow:
                   "0 1px 18px rgba(2,132,199,0.09), 0 1px 3px rgba(0,0,0,0.05)",
-                willChange: "transform, opacity, filter",
               }}
             >
               NAMMA
@@ -535,7 +508,7 @@ export default function Loader({ onComplete }: LoaderProps) {
               }}
             />
 
-            {/* STEP 8 — cycling subtitle */}
+            {/* STEP 8 — cycling subtitle (Crossfades seamlessly without mode="wait") */}
             <motion.div
               variants={subtitleContainerVariants}
               initial="hidden"
@@ -543,7 +516,7 @@ export default function Loader({ onComplete }: LoaderProps) {
               className="mt-3 relative w-full flex justify-center items-center overflow-hidden"
               style={{ height: 28, minHeight: 28 }}
             >
-              <AnimatePresence mode="wait">
+              <AnimatePresence>
                 <motion.p
                   key={subtitleIndex}
                   variants={subtitleVariants}
@@ -609,7 +582,6 @@ export default function Loader({ onComplete }: LoaderProps) {
                         "linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent)",
                       borderRadius: 99,
                       left:         0,
-                      willChange:   "transform",
                     }}
                   />
                 </motion.div>
