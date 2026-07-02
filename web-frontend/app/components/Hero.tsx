@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, memo } from "react";
-import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from "framer-motion";
+import { motion, useMotionValue, useSpring,Variants, useTransform, AnimatePresence } from "framer-motion";
 import { api } from "../lib/api";
 
 // ==========================================
@@ -90,16 +90,32 @@ const AnimatedTitle = memo(({ title }: { title: string }) => {
     },
   };
 
-  const letter = {
-    hidden: { opacity: 0, y: 20, filter: "blur(4px)" },
-    visible: {
-      opacity: 1,
-      y: 0,
-      filter: "blur(0px)",
-      transition: { type: "spring", damping: 16, stiffness: 100 },
+
+const letter: Variants = {
+  hidden: {
+    opacity: 0,
+    y: 40,
+    filter: "blur(8px)",
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: {
+      type: "spring" as const,
+      damping: 18,
+      stiffness: 180,
     },
-    exit: { opacity: 0, y: -20, filter: "blur(4px)", transition: { duration: 0.2 } }
-  };
+  },
+  exit: {
+    opacity: 0,
+    y: -20,
+    filter: "blur(8px)",
+    transition: {
+      duration: 0.2,
+    },
+  },
+};
 
   return (
     <motion.h2
@@ -127,10 +143,22 @@ AnimatedTitle.displayName = "AnimatedTitle";
 
 // Extracted centralized overlay
 const HeroOverlay = memo(({ activeVideo }: { activeVideo: VideoData }) => {
-  const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 } },
-  };
+
+  const itemVariants: Variants = {
+  hidden: {
+    opacity: 0,
+    y: 30,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.8,
+      ease: [0.22, 1, 0.36, 1] as const,
+      delay: 0.2,
+    },
+  },
+};
 
   return (
     <div className="absolute inset-0 z-30 flex flex-col items-center justify-center px-6 sm:px-10 text-center pointer-events-none">

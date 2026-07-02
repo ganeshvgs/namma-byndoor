@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState, memo, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, Variants , AnimatePresence } from "framer-motion";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -199,41 +199,51 @@ const shineVariants = {
 } as const;
 
 // ─── Marker variants (per index) ──────────────────────────────────────────────
-
 function makeMarkerVariants(i: number) {
   const delay = T.MARKERS_START + i * T.MARKER_STAGGER;
 
   return {
-    // persistent soft glow behind the dot
     glow: {
-      hidden:  { opacity: 0, scale: 0 },
+      hidden: { opacity: 0, scale: 0 },
       visible: {
-        opacity: [0, 0.55, 0.20],
-        scale:   [0, 1.90, 1.30],
-        transition: { delay, duration: 1.4, ease: "easeOut", times: [0, 0.5, 1] },
+        opacity: [0, 0.55, 0.2],
+        scale: [0, 1.9, 1.3],
+        transition: {
+          delay,
+          duration: 1.4,
+          ease: "easeOut",
+          times: [0, 0.5, 1],
+        },
       },
     },
-    // one-shot expanding ring that vanishes
+
     ring: {
-      hidden:  { opacity: 0, scale: 0 },
+      hidden: { opacity: 0, scale: 0 },
       visible: {
         opacity: [0, 0.85, 0],
-        scale:   [0, 1.0, 2.4],
-        transition: { delay, duration: 1.2, ease: "easeOut", times: [0, 0.3, 1] },
+        scale: [0, 1, 2.4],
+        transition: {
+          delay,
+          duration: 1.2,
+          ease: "easeOut",
+          times: [0, 0.3, 1],
+        },
       },
     },
-    // core dot (white + orange + specular)
+
     core: {
-      hidden:  { opacity: 0, scale: 0 },
+      hidden: { opacity: 0, scale: 0 },
       visible: {
         opacity: 1,
-        scale:   1,
-        transition: tr(delay, 0.5, EASE_SPRING),
+        scale: 1,
+        transition: {
+          delay,
+          duration: 0.5,
+        },
       },
     },
-  } as const;
+  };
 }
-
 // ─── LocationMarker ───────────────────────────────────────────────────────────
 
 interface MarkerProps {
