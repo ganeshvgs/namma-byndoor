@@ -25,9 +25,19 @@ const app = express();
 app.use(helmet());
 
 // Allow Frontend
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://nammabyndoor.vercel.app",
+];
+
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   })
 );
