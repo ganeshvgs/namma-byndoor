@@ -187,11 +187,7 @@ const HeroOverlay = memo(({ activeVideo }: { activeVideo: VideoData }) => {
         </span>
       </motion.div>
 
-      <div className="min-h-[120px] flex items-center justify-center">
-        <AnimatePresence mode="wait">
-          <AnimatedTitle key={activeVideo._id} title={activeVideo.title} />
-        </AnimatePresence>
-      </div>
+      
 
       <motion.p
         variants={overlayVariants}
@@ -199,7 +195,7 @@ const HeroOverlay = memo(({ activeVideo }: { activeVideo: VideoData }) => {
         animate="visible"
         className="text-base sm:text-lg lg:text-xl text-white/90 font-normal tracking-wide mb-10 max-w-md mx-auto drop-shadow-md"
       >
-        Discover the beauty of Byndoor
+        Discover the beauty of Byndoor 
       </motion.p>
 
       <motion.div variants={overlayVariants} initial="hidden" animate="visible" className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full max-w-[280px] sm:max-w-none pointer-events-auto">
