@@ -37,8 +37,10 @@ async function request<T>(
 ): Promise<T> {
   const token = getToken();
 
+  const isFormData = options.body instanceof FormData;
+
   const headers: HeadersInit = {
-    "Content-Type": "application/json",
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(options.headers || {}),
   };
 
@@ -50,9 +52,11 @@ async function request<T>(
     ...options,
     headers,
     body:
-      options.body !== undefined
-        ? JSON.stringify(options.body)
-        : undefined,
+      options.body === undefined
+        ? undefined
+        : isFormData
+        ? (options.body as FormData)
+        : JSON.stringify(options.body),
   });
 
   if (response.status === 401 || response.status === 403) {
@@ -77,7 +81,6 @@ async function request<T>(
 
   return response.json();
 }
-
 export const api = {
   get: <T>(url: string) =>
     request<T>(url, { method: "GET" }),

@@ -9,12 +9,16 @@ import rateLimit from "express-rate-limit";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import heroVideoRoutes from "./routes/heroVideoRoutes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
+import categoryRoutes from "./routes/categoryRoutes.js";
+import placeRoutes from "./routes/placeRoutes.js";
+import { connectCloudinary } from "./config/cloudinary.js";
 // Load Environment Variables
 dotenv.config();
 
 // Connect MongoDB
 connectDB();
-
+connectCloudinary();
 const app = express();
 
 /* ===========================
@@ -63,7 +67,9 @@ const limiter = rateLimit({
 });
 
 app.use(limiter);
-
+app.use("/api/upload", uploadRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/places", placeRoutes);
 /* ===========================
    Routes
 =========================== */

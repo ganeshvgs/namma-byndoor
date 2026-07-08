@@ -1,25 +1,23 @@
-// path: web-frontend/app/admin/page.tsx
+// path: web-frontend/app/admin/places/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
-import AdminSidebar from "..//admin/AdminSidebar";
-import DashboardView from "..//admin/dashboard/DashboardView";
-import { ToastContainer } from "..//admin/Toast";
-import { api } from "../lib/api";
+import AdminSidebar from "../AdminSidebar";
+import PlacesView from "./PlacesView";
+import { ToastContainer } from "../Toast";
+import { api } from "../../lib/api";
 
-export default function AdminPage() {
+export default function PlacesAdminPage() {
   const [loading, setLoading] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const verifyAdmin = async () => {
       const token = localStorage.getItem("token");
-
       if (!token) {
         window.location.replace("/login");
         return;
       }
-
       try {
         await api.get("/api/auth/me");
         setLoading(false);
@@ -29,7 +27,6 @@ export default function AdminPage() {
         window.location.replace("/login");
       }
     };
-
     verifyAdmin();
   }, []);
 
@@ -41,7 +38,7 @@ export default function AdminPage() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
           </svg>
-          <span>Loading Dashboard...</span>
+          <span>Loading Places...</span>
         </div>
       </div>
     );
@@ -50,46 +47,24 @@ export default function AdminPage() {
   return (
     <>
       <ToastContainer />
-
       <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-indigo-500 selection:text-white">
-        <AdminSidebar
-          mobileOpen={mobileOpen}
-          onMobileClose={() => setMobileOpen(false)}
-        />
+        <AdminSidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
 
         {/* Mobile Header */}
         <header className="lg:hidden sticky top-0 z-20 h-16 flex items-center justify-between px-5 border-b border-white/10 bg-slate-950/90 backdrop-blur-xl">
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
-            aria-label="Open sidebar"
-          >
-            <svg
-              className="w-6 h-6"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
+          <button onClick={() => setMobileOpen(true)} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-300">
+            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
-
           <div className="text-center">
             <h2 className="text-white font-bold text-sm tracking-wide">NAMMA BYNDOOR</h2>
-            <p className="text-[10px] font-semibold text-blue-400 uppercase tracking-widest leading-none">CMS Portal</p>
+            <p className="text-[10px] font-semibold text-blue-400 uppercase tracking-widest leading-none">Places</p>
           </div>
-
           <div className="w-10" />
         </header>
 
-        {/* Main Dashboard Content Area */}
+        {/* Main Content */}
         <main className="lg:ml-64 p-6 lg:p-10 max-w-7xl mx-auto">
-          <DashboardView />
+          <PlacesView />
         </main>
       </div>
     </>

@@ -1,13 +1,13 @@
-// path: web-frontend/app/admin/page.tsx
+// path: web-frontend/app/admin/categories/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
-import AdminSidebar from "..//admin/AdminSidebar";
-import DashboardView from "..//admin/dashboard/DashboardView";
-import { ToastContainer } from "..//admin/Toast";
-import { api } from "../lib/api";
+import AdminSidebar from "../AdminSidebar";
+import CategoriesView from "./CategoriesView";
+import { ToastContainer } from "../Toast";
+import { api } from "../../lib/api";
 
-export default function AdminPage() {
+export default function CategoriesAdminPage() {
   const [loading, setLoading] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -41,7 +41,7 @@ export default function AdminPage() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
           </svg>
-          <span>Loading Dashboard...</span>
+          <span>Loading Categories...</span>
         </div>
       </div>
     );
@@ -81,15 +81,15 @@ export default function AdminPage() {
 
           <div className="text-center">
             <h2 className="text-white font-bold text-sm tracking-wide">NAMMA BYNDOOR</h2>
-            <p className="text-[10px] font-semibold text-blue-400 uppercase tracking-widest leading-none">CMS Portal</p>
+            <p className="text-[10px] font-semibold text-blue-400 uppercase tracking-widest leading-none">Categories</p>
           </div>
 
           <div className="w-10" />
         </header>
 
-        {/* Main Dashboard Content Area */}
+        {/* Main Content Area */}
         <main className="lg:ml-64 p-6 lg:p-10 max-w-7xl mx-auto">
-          <DashboardView />
+          <CategoriesView />
         </main>
       </div>
     </>

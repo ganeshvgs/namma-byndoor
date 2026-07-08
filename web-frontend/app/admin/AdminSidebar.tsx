@@ -23,15 +23,7 @@ const NAV_ITEMS: NavItem[] = [
       </svg>
     ),
   },
-  {
-    label: "Hero Videos",
-    href: "/admin/hero-videos",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 18.996 6 18.375m-3.75.125v-9.375C2.25 8.004 2.754 7.5 3.375 7.5h17.25C21.246 7.5 21.75 8.004 21.75 8.625v9.75c0 .621-.504 1.125-1.125 1.125m0 0h-1.5m-15.75 0a1.125 1.125 0 011.125-1.125h13.5A1.125 1.125 0 0121 18.375M15 12l-4.5 2.598V9.402L15 12z" />
-      </svg>
-    ),
-  },
+ 
 ];
 
 // ─── Logo mark ────────────────────────────────────────────────────────────────

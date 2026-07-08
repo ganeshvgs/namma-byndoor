@@ -21,7 +21,7 @@ const seedAdmin = async () => {
     // Create admin
     const admin = new Admin({
       username: "admin",
-      password: "admin123", // This will be hashed automatically
+      password: "admin1234", // This will be hashed automatically
     });
 
     await admin.save();
