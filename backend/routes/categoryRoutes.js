@@ -12,11 +12,18 @@ import {
 
 const router = express.Router();
 
-router.get("/", authMiddleware, getCategories);
-router.get("/:id", authMiddleware, getCategory);
+/* Public */
+router.get("/", getCategories);
+router.get("/:id", getCategory);
+
+/* Admin Only */
 router.post("/", authMiddleware, createCategory);
 router.put("/:id", authMiddleware, updateCategory);
 router.delete("/:id", authMiddleware, deleteCategory);
-router.patch("/:id/status", authMiddleware, toggleCategoryStatus);
+router.patch(
+  "/:id/status",
+  authMiddleware,
+  toggleCategoryStatus
+);
 
 export default router;

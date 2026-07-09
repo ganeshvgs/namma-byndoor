@@ -191,12 +191,31 @@ export const getPlaces = async (req, res) => {
 /* ===========================================
    Get Single Place
 =========================================== */
+/* ===========================================
+   Get Single Place by MongoDB ID or Slug
+=========================================== */
 export const getPlace = async (req, res) => {
   try {
-    const place = await Place.findById(req.params.id).populate(
-      "category",
-      "name slug"
-    );
+    const { id } = req.params;
+
+    let place;
+
+    // Admin requests may use MongoDB ID
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      place = await Place.findById(id).populate(
+        "category",
+        "name slug description icon coverImage"
+      );
+    } else {
+      // Public place pages use the readable slug
+      place = await Place.findOne({
+        slug: id.toLowerCase().trim(),
+        status: "active",
+      }).populate(
+        "category",
+        "name slug description icon coverImage"
+      );
+    }
 
     if (!place) {
       return res.status(404).json({
@@ -211,9 +230,11 @@ export const getPlace = async (req, res) => {
     });
   } catch (err) {
     console.error("getPlace Error:", err);
+
     return res.status(500).json({
       success: false,
-      message: err.message,
+      message: "Unable to retrieve place.",
+      error: err.message,
     });
   }
 };
