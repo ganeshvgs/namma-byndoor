@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { api, ApiError } from "../../lib/api";
+import { api } from "../../lib/api";
 
 // Assuming existing Layout components are imported from your project structure
 import Navbar from "../../components/Navbar";
@@ -116,6 +116,13 @@ const PhotoIcon = memo(() => (
 ));
 PhotoIcon.displayName = "PhotoIcon";
 
+const ExpandArrowsIcon = memo(() => (
+  <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+  </svg>
+));
+ExpandArrowsIcon.displayName = "ExpandArrowsIcon";
+
 // ============================================================================
 // HELPER: MAP URL GENERATOR
 // ============================================================================
@@ -125,7 +132,7 @@ function getMapUrl(place: PlaceDetails): string | null {
     return place.googleMapsUrl;
   }
   if (place.latitude !== undefined && place.longitude !== undefined && place.latitude !== "" && place.longitude !== "") {
-    return `https://www.google.com/maps/search/?api=1&query=${place.latitude},${place.longitude}`;
+    return `https://www.google.com/maps/search/?api=1&query=$${place.latitude},${place.longitude}`;
   }
   return null;
 }
@@ -136,18 +143,17 @@ function getMapUrl(place: PlaceDetails): string | null {
 
 interface PlaceHeroProps {
   place: PlaceDetails;
+  hasGallery: boolean;
   onOpenGallery?: () => void;
   reducedMotion: boolean | null;
 }
 
-const PlaceHero = memo(({ place, onOpenGallery, reducedMotion }: PlaceHeroProps) => {
+const PlaceHero = memo(({ place, hasGallery, onOpenGallery, reducedMotion }: PlaceHeroProps) => {
   const mapUrl = getMapUrl(place);
   const categoryName = typeof place.category === "object" ? place.category?.name : place.category;
-  const hasGallery = place.galleryImages && place.galleryImages.length > 0;
 
   return (
     <section className="relative w-full h-[65vh] lg:h-[80vh] min-h-[480px] max-h-[900px] overflow-hidden select-none bg-slate-900">
-      {/* Cover Image */}
       <Image
         src={place.coverImage || "/images/placeholder-place.jpg"}
         alt={place.title}
@@ -157,11 +163,8 @@ const PlaceHero = memo(({ place, onOpenGallery, reducedMotion }: PlaceHeroProps)
         sizes="100vw"
         className="object-cover transition-transform duration-1000 ease-out"
       />
-
-      {/* Dark Gradient over Image ONLY for readability */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-[#0F172A]/40 to-transparent opacity-90 pointer-events-none" />
-
-      {/* Hero Content Container */}
+      
       <div className="absolute inset-0 z-10 flex flex-col justify-end pb-24 md:pb-32 px-6 md:px-12 xl:px-20 max-w-[1400px] mx-auto w-full">
         <motion.div
           initial={reducedMotion ? undefined : { opacity: 0, y: 24 }}
@@ -169,40 +172,30 @@ const PlaceHero = memo(({ place, onOpenGallery, reducedMotion }: PlaceHeroProps)
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           className="max-w-3xl"
         >
-          {/* Badges Row */}
           <div className="flex flex-wrap items-center gap-2.5 mb-4">
             {categoryName && (
               <span className="px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-white bg-white/20 backdrop-blur-md border border-white/30 shadow-sm">
                 {categoryName}
               </span>
             )}
-
             {place.featured === true && (
               <span
                 className="px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider text-white shadow-md border border-white/30 flex items-center gap-1.5"
-                style={{
-                  background: `linear-gradient(135deg, ${TOKENS.primary} 0%, ${TOKENS.secondary} 100%)`,
-                }}
+                style={{ background: `linear-gradient(135deg, ${TOKENS.primary} 0%, ${TOKENS.secondary} 100%)` }}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                 Featured
               </span>
             )}
           </div>
-
-          {/* Title */}
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight drop-shadow-lg mb-4">
             {place.title}
           </h1>
-
-          {/* Short Description */}
           {place.shortDescription && (
             <p className="text-base sm:text-lg lg:text-xl text-slate-200 font-normal leading-relaxed max-w-2xl drop-shadow mb-8 line-clamp-3">
               {place.shortDescription}
             </p>
           )}
-
-          {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-4">
             {mapUrl && (
               <a
@@ -215,12 +208,11 @@ const PlaceHero = memo(({ place, onOpenGallery, reducedMotion }: PlaceHeroProps)
                 <span>Open in Maps</span>
               </a>
             )}
-
             {hasGallery && (
               <button
                 type="button"
                 onClick={onOpenGallery}
-                className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full font-bold text-xs sm:text-sm tracking-[0.1em] text-white uppercase transition-all duration-300 bg-white/15 backdrop-blur-md border border-white/30 hover:bg-white/25 hover:border-white/50 transform hover:-translate-y-0.5 shadow-sm cursor-pointer"
+                className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full font-bold text-xs sm:text-sm tracking-[0.1em] text-white uppercase transition-all duration-300 bg-white/15 backdrop-blur-md border border-white/30 hover:bg-white/25 hover:border-white/50 transform hover:-translate-y-0.5 shadow-sm cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#38BDF8]"
               >
                 <PhotoIcon />
                 <span>View Photos</span>
@@ -272,10 +264,7 @@ const PlaceInformation = memo(({ place, reducedMotion }: PlaceInformationProps) 
         animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
         className="w-full rounded-[28px] md:rounded-[32px] p-6 sm:p-8 border backdrop-blur-2xl shadow-[0_15px_35px_-10px_rgba(15,23,42,0.08),0_4px_12px_rgba(2,132,199,0.04)]"
-        style={{
-          backgroundColor: TOKENS.cardBg,
-          borderColor: TOKENS.border,
-        }}
+        style={{ backgroundColor: TOKENS.cardBg, borderColor: TOKENS.border }}
       >
         <div className={`grid grid-cols-2 ${items.length >= 3 ? "lg:grid-cols-4" : "lg:grid-cols-2"} gap-6 sm:gap-8`}>
           {items.map((item, idx) => (
@@ -283,9 +272,7 @@ const PlaceInformation = memo(({ place, reducedMotion }: PlaceInformationProps) 
               key={idx}
               className={`flex flex-col sm:flex-row items-start sm:items-center gap-3.5 ${
                 idx !== 0 && idx % 2 === 1 ? "border-l border-slate-200/60 pl-4 sm:pl-6" : ""
-              } ${
-                idx >= 2 ? "lg:border-l lg:border-slate-200/60 lg:pl-6 pt-4 sm:pt-0 border-t border-slate-100 sm:border-t-0" : ""
-              }`}
+              } ${idx >= 2 ? "lg:border-l lg:border-slate-200/60 lg:pl-6 pt-4 sm:pt-0 border-t border-slate-100 sm:border-t-0" : ""}`}
             >
               <div className="w-11 h-11 rounded-2xl bg-[#0284C7]/10 flex items-center justify-center shrink-0 border border-[#0284C7]/20">
                 {item.icon}
@@ -318,7 +305,6 @@ interface PlaceStoryProps {
 
 const PlaceStory = memo(({ place, reducedMotion }: PlaceStoryProps) => {
   if (!place.story || place.story.trim() === "") return null;
-
   const paragraphs = place.story.split(/\n+/).filter((p) => p.trim() !== "");
 
   return (
@@ -336,12 +322,9 @@ const PlaceStory = memo(({ place, reducedMotion }: PlaceStoryProps) => {
         <h2 className="text-2xl sm:text-4xl font-black text-[#0F172A] tracking-tight mb-8">
           The Story of {place.title}
         </h2>
-        
         <div className="space-y-6 text-base sm:text-lg text-slate-700 font-normal leading-relaxed">
           {paragraphs.map((para, idx) => (
-            <p key={idx} className="leading-8">
-              {para}
-            </p>
+            <p key={idx} className="leading-8">{para}</p>
           ))}
         </div>
       </motion.div>
@@ -363,11 +346,13 @@ interface GalleryLightboxProps {
 const GalleryLightbox = memo(({ images, initialIndex, onClose }: GalleryLightboxProps) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
 
-  const handlePrev = useCallback(() => {
+  const handlePrev = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
   }, [images.length]);
 
-  const handleNext = useCallback(() => {
+  const handleNext = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   }, [images.length]);
 
@@ -381,38 +366,44 @@ const GalleryLightbox = memo(({ images, initialIndex, onClose }: GalleryLightbox
     document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "auto";
+      document.body.style.overflow = "";
     };
   }, [onClose, handlePrev, handleNext]);
 
   return (
     <AnimatePresence>
       <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Fullscreen photo gallery"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.25 }}
-        className="fixed inset-0 z-50 bg-[#0F172A]/95 backdrop-blur-xl flex flex-col items-center justify-between p-4 md:p-8 select-none"
+        onClick={onClose}
+        className="fixed inset-0 z-[9999] bg-[#0F172A]/95 backdrop-blur-xl flex flex-col items-center justify-between p-4 md:p-8 select-none"
       >
-        {/* Top Header Controls */}
-        <div className="w-full max-w-7xl flex items-center justify-between text-white z-10">
-          <span className="text-xs md:text-sm font-extrabold tracking-widest uppercase bg-white/10 px-4 py-1.5 rounded-full border border-white/20">
+        {/* High-visibility Close Button respecting safe areas */}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onClose(); }}
+          className="fixed top-[max(1rem,env(safe-area-inset-top))] right-[max(1rem,env(safe-area-inset-right))] z-[10000] w-12 h-12 rounded-full bg-white text-[#0F172A] shadow-[0_4px_20px_rgba(0,0,0,0.3)] flex items-center justify-center hover:scale-105 transition-transform focus:outline-none focus-visible:ring-4 focus-visible:ring-[#38BDF8]"
+          aria-label="Close photo gallery"
+        >
+          <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        {/* Header Indicator */}
+        <div className="w-full max-w-7xl flex items-center justify-center text-white z-10 pt-[env(safe-area-inset-top)]">
+          <span className="text-xs md:text-sm font-extrabold tracking-widest uppercase bg-white/10 px-5 py-2 rounded-full border border-white/20 shadow-sm backdrop-blur-md">
             Photo {currentIndex + 1} of {images.length}
           </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
-            aria-label="Close Gallery"
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
         </div>
 
         {/* Main Image Viewport */}
-        <div className="relative w-full max-w-6xl h-[70vh] flex items-center justify-center my-4">
+        <div className="relative w-full max-w-7xl flex-1 flex items-center justify-center my-4 overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentIndex}
@@ -421,9 +412,10 @@ const GalleryLightbox = memo(({ images, initialIndex, onClose }: GalleryLightbox
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.2 }}
               className="relative w-full h-full flex items-center justify-center"
+              onClick={(e) => e.stopPropagation()} // prevent closing when clicking image
             >
               <Image
-                src={images[currentIndex]?.image || "/images/placeholder-place.jpg"}
+                src={images[currentIndex]?.image}
                 alt={`Gallery photo ${currentIndex + 1}`}
                 fill
                 sizes="100vw"
@@ -438,10 +430,10 @@ const GalleryLightbox = memo(({ images, initialIndex, onClose }: GalleryLightbox
             <button
               type="button"
               onClick={handlePrev}
-              className="absolute left-2 md:left-4 w-12 h-12 rounded-full bg-black/40 hover:bg-black/70 border border-white/20 text-white flex items-center justify-center transition-all transform hover:scale-105 cursor-pointer z-10"
+              className="absolute left-2 md:left-6 w-12 h-12 md:w-14 md:h-14 rounded-full bg-black/50 hover:bg-black/80 border border-white/20 text-white flex items-center justify-center transition-all transform hover:scale-105 cursor-pointer z-[10000] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#38BDF8] backdrop-blur-md"
               aria-label="Previous photo"
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
@@ -452,10 +444,10 @@ const GalleryLightbox = memo(({ images, initialIndex, onClose }: GalleryLightbox
             <button
               type="button"
               onClick={handleNext}
-              className="absolute right-2 md:right-4 w-12 h-12 rounded-full bg-black/40 hover:bg-black/70 border border-white/20 text-white flex items-center justify-center transition-all transform hover:scale-105 cursor-pointer z-10"
+              className="absolute right-2 md:right-6 w-12 h-12 md:w-14 md:h-14 rounded-full bg-black/50 hover:bg-black/80 border border-white/20 text-white flex items-center justify-center transition-all transform hover:scale-105 cursor-pointer z-[10000] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#38BDF8] backdrop-blur-md"
               aria-label="Next photo"
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </button>
@@ -464,19 +456,23 @@ const GalleryLightbox = memo(({ images, initialIndex, onClose }: GalleryLightbox
 
         {/* Bottom Thumbnail Strip */}
         {images.length > 1 && (
-          <div className="w-full max-w-4xl flex items-center justify-center gap-2 overflow-x-auto py-2 px-4 scrollbar-none">
+          <div 
+            className="w-full max-w-4xl flex items-center justify-center gap-3 overflow-x-auto py-4 px-4 scrollbar-none pb-[env(safe-area-inset-bottom)]"
+            onClick={(e) => e.stopPropagation()}
+          >
             {images.map((img, idx) => (
               <button
                 type="button"
                 key={idx}
                 onClick={() => setCurrentIndex(idx)}
-                className={`relative w-14 h-14 md:w-16 md:h-16 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
+                aria-label={`Go to photo ${idx + 1}`}
+                className={`relative w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#38BDF8] ${
                   currentIndex === idx
-                    ? "border-[#38BDF8] scale-105 opacity-100 shadow-md"
-                    : "border-transparent opacity-40 hover:opacity-80"
+                    ? "border-[#38BDF8] scale-110 opacity-100 shadow-lg"
+                    : "border-transparent opacity-40 hover:opacity-100"
                 }`}
               >
-                <Image src={img.image} alt="thumbnail" fill sizes="64px" className="object-cover" />
+                <Image src={img.image} alt={`Thumbnail ${idx + 1}`} fill sizes="80px" className="object-cover" />
               </button>
             ))}
           </div>
@@ -492,23 +488,59 @@ GalleryLightbox.displayName = "GalleryLightbox";
 // ============================================================================
 
 interface PlaceGalleryProps {
-  images?: GalleryImage[];
+  images: GalleryImage[];
   onOpenLightbox: (index: number) => void;
   reducedMotion: boolean | null;
 }
 
+const GalleryCard = memo(({ 
+  image, 
+  index, 
+  className = "", 
+  overlayText, 
+  onOpenLightbox 
+}: { 
+  image: GalleryImage; 
+  index: number; 
+  className?: string; 
+  overlayText?: string;
+  onOpenLightbox: (idx: number) => void; 
+}) => (
+  <button
+    type="button"
+    onClick={() => onOpenLightbox(index)}
+    aria-label={overlayText ? `View photo ${index + 1} and ${overlayText.toLowerCase()}` : `View photo ${index + 1}`}
+    className={`relative rounded-[24px] overflow-hidden group focus:outline-none focus-visible:ring-4 focus-visible:ring-[#38BDF8] bg-slate-100 shadow-sm hover:shadow-lg transition-shadow duration-300 block w-full h-full ${className}`}
+  >
+    <Image 
+      src={image.image} 
+      alt={`Gallery photo ${index + 1}`} 
+      fill 
+      className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
+      sizes="(max-width: 1440px) 50vw, 100vw" 
+    />
+    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
+    
+    <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/30 opacity-80 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-300 shadow-md">
+      <ExpandArrowsIcon />
+    </div>
+
+    {overlayText && (
+      <div className="absolute inset-0 bg-[#0F172A]/70 backdrop-blur-sm flex items-center justify-center text-white font-black text-xl md:text-2xl tracking-wider">
+        {overlayText}
+      </div>
+    )}
+  </button>
+));
+GalleryCard.displayName = "GalleryCard";
+
 const PlaceGallery = memo(({ images, onOpenLightbox, reducedMotion }: PlaceGalleryProps) => {
   if (!images || images.length === 0) return null;
-
-  const validImages = images.filter((img) => img && img.image && img.image.trim() !== "");
-  if (validImages.length === 0) return null;
-
-  const largeImage = validImages[0];
-  const gridImages = validImages.slice(1, 5);
+  const imageCount = images.length;
 
   return (
-    <section className="py-12 md:py-16 px-6 md:px-12 xl:px-20 max-w-[1400px] mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+    <section className="py-12 md:py-16 px-0 md:px-12 xl:px-20 max-w-[1400px] mx-auto w-full">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 px-6 md:px-0">
         <div>
           <span className="inline-block px-3.5 py-1 rounded-full text-[11px] font-extrabold tracking-[0.25em] uppercase mb-3 border bg-[#0284C7]/10 text-[#0284C7] border-[#0284C7]/20">
             PHOTO GALLERY
@@ -517,84 +549,126 @@ const PlaceGallery = memo(({ images, onOpenLightbox, reducedMotion }: PlaceGalle
             Visual Exploration
           </h2>
         </div>
-
-        {validImages.length > 5 && (
-          <button
-            type="button"
-            onClick={() => onOpenLightbox(0)}
-            className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-[#0284C7] hover:text-[#0369A1] tracking-wider uppercase group cursor-pointer self-start sm:self-auto"
-          >
-            <span>View All {validImages.length} Photos</span>
-            <span className="transition-transform group-hover:translate-x-1">&rarr;</span>
-          </button>
-        )}
       </div>
 
-      {/* Desktop & Tablet Layout: 1 Large Left + 4 Right Grid */}
-      <div className="hidden md:grid md:grid-cols-12 gap-4 lg:gap-6 h-[460px] lg:h-[540px]">
-        {/* Large Left Image (Cols 1-7) */}
-        <motion.div
-          whileHover={reducedMotion ? undefined : { scale: 1.01 }}
-          transition={{ duration: 0.3 }}
-          onClick={() => onOpenLightbox(0)}
-          className="col-span-7 relative rounded-[28px] overflow-hidden bg-slate-100 cursor-pointer shadow-md group"
-        >
-          <Image
-            src={largeImage.image}
-            alt="Gallery hero"
-            fill
-            sizes="(max-width: 1200px) 50vw, 60vw"
-            className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-          />
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors flex items-center justify-center">
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 backdrop-blur-md text-white text-xs font-bold px-4 py-2 rounded-full uppercase tracking-wider border border-white/30">
-              Expand Photo
-            </span>
-          </div>
-        </motion.div>
-
-        {/* Four Right Images Grid (Cols 8-12) */}
-        <div className="col-span-5 grid grid-cols-2 gap-4 lg:gap-6 h-full">
-          {gridImages.map((img, idx) => (
-            <motion.div
+      {/* ── MOBILE LAYOUT (< 768px) ── */}
+      <div className="md:hidden">
+        <div className="flex items-center justify-between mb-3 px-6">
+          <span className="text-xs font-bold text-[#64748B] flex items-center gap-1.5">
+            Swipe to explore photos 
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+          </span>
+        </div>
+        <div className="flex gap-4 overflow-x-auto pb-6 px-6 snap-x snap-mandatory scrollbar-none w-full" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+          {images.map((img, idx) => (
+            <button
               key={idx}
-              whileHover={reducedMotion ? undefined : { scale: 1.02 }}
-              transition={{ duration: 0.3 }}
-              onClick={() => onOpenLightbox(idx + 1)}
-              className="relative rounded-[22px] overflow-hidden bg-slate-100 cursor-pointer shadow-sm group"
+              type="button"
+              onClick={() => onOpenLightbox(idx)}
+              aria-label={`View photo ${idx + 1} of ${imageCount}`}
+              className="relative w-[85vw] max-w-[400px] aspect-[4/3] rounded-[24px] shrink-0 snap-center overflow-hidden shadow-md focus:outline-none focus-visible:ring-4 focus-visible:ring-[#38BDF8] group bg-slate-100"
             >
-              <Image
-                src={img.image}
-                alt={`Gallery thumbnail ${idx + 2}`}
-                fill
-                sizes="(max-width: 1200px) 25vw, 20vw"
-                className="object-cover transition-transform duration-500 ease-out group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-              {idx === 3 && validImages.length > 5 && (
-                <div className="absolute inset-0 bg-[#0F172A]/70 backdrop-blur-sm flex items-center justify-center text-white font-extrabold text-lg sm:text-xl">
-                  +{validImages.length - 5} More
-                </div>
-              )}
-            </motion.div>
+              <Image src={img.image} alt={`Gallery mobile ${idx + 1}`} fill sizes="(max-width: 768px) 85vw, 400px" className="object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/30 shadow-md">
+                <ExpandArrowsIcon />
+              </div>
+              <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full tracking-widest shadow-sm">
+                {idx + 1} / {imageCount}
+              </div>
+            </button>
           ))}
         </div>
       </div>
 
-      {/* Mobile Layout: Horizontally Swipeable Gallery */}
-      <div className="md:hidden flex gap-3.5 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-none">
-        {validImages.map((img, idx) => (
-          <div
-            key={idx}
-            onClick={() => onOpenLightbox(idx)}
-            className="relative w-[280px] h-[340px] rounded-[24px] overflow-hidden shrink-0 bg-slate-100 snap-center shadow-md cursor-pointer"
-          >
-            <Image src={img.image} alt={`Gallery mobile ${idx + 1}`} fill sizes="280px" className="object-cover" />
-            <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase">
-              {idx + 1} / {validImages.length}
-            </div>
+      {/* ── TABLET LAYOUT (768px - 1023px) ── */}
+      <div className="hidden md:flex lg:hidden flex-col gap-5 h-[700px]">
+        {/* Always large featured top image on tablet */}
+        <div className="w-full flex-[1.2] relative rounded-[28px] overflow-hidden">
+           <GalleryCard image={images[0]} index={0} onOpenLightbox={onOpenLightbox} className="w-full h-full" />
+        </div>
+        {/* Dynamic bottom grid for remaining items */}
+        {imageCount > 1 && (
+          <div className={`w-full flex-1 grid gap-5 ${
+            imageCount === 2 ? 'grid-cols-1' : imageCount === 3 ? 'grid-cols-2' : imageCount === 4 ? 'grid-cols-3' : 'grid-cols-4'
+          }`}>
+            {images.slice(1, 5).map((img, i) => (
+              <GalleryCard 
+                key={i + 1} 
+                image={img} 
+                index={i + 1} 
+                onOpenLightbox={onOpenLightbox}
+                className="w-full h-full"
+                overlayText={i === 3 && imageCount > 5 ? `+${imageCount - 5}` : undefined}
+              />
+            ))}
           </div>
-        ))}
+        )}
+      </div>
+
+      {/* ── LAPTOP & DESKTOP LAYOUT (>= 1024px) ── */}
+      <div className="hidden lg:grid grid-cols-12 gap-6 h-[500px] xl:h-[600px]">
+        {imageCount === 1 && (
+          <div className="col-span-12 w-full h-full">
+            <GalleryCard image={images[0]} index={0} onOpenLightbox={onOpenLightbox} />
+          </div>
+        )}
+        
+        {imageCount === 2 && (
+          <>
+            <div className="col-span-6 w-full h-full">
+              <GalleryCard image={images[0]} index={0} onOpenLightbox={onOpenLightbox} />
+            </div>
+            <div className="col-span-6 w-full h-full">
+              <GalleryCard image={images[1]} index={1} onOpenLightbox={onOpenLightbox} />
+            </div>
+          </>
+        )}
+        
+        {imageCount === 3 && (
+          <>
+            <div className="col-span-8 w-full h-full">
+              <GalleryCard image={images[0]} index={0} onOpenLightbox={onOpenLightbox} />
+            </div>
+            <div className="col-span-4 flex flex-col gap-6 w-full h-full">
+              <div className="flex-1"><GalleryCard image={images[1]} index={1} onOpenLightbox={onOpenLightbox} /></div>
+              <div className="flex-1"><GalleryCard image={images[2]} index={2} onOpenLightbox={onOpenLightbox} /></div>
+            </div>
+          </>
+        )}
+        
+        {imageCount === 4 && (
+          <>
+            <div className="col-span-8 w-full h-full">
+              <GalleryCard image={images[0]} index={0} onOpenLightbox={onOpenLightbox} />
+            </div>
+            <div className="col-span-4 grid grid-cols-2 grid-rows-2 gap-6 w-full h-full">
+              <div className="col-span-2 row-span-1"><GalleryCard image={images[1]} index={1} onOpenLightbox={onOpenLightbox} /></div>
+              <div className="col-span-1 row-span-1"><GalleryCard image={images[2]} index={2} onOpenLightbox={onOpenLightbox} /></div>
+              <div className="col-span-1 row-span-1"><GalleryCard image={images[3]} index={3} onOpenLightbox={onOpenLightbox} /></div>
+            </div>
+          </>
+        )}
+        
+        {imageCount >= 5 && (
+          <>
+            <div className="col-span-7 xl:col-span-8 w-full h-full">
+              <GalleryCard image={images[0]} index={0} onOpenLightbox={onOpenLightbox} />
+            </div>
+            <div className="col-span-5 xl:col-span-4 grid grid-cols-2 grid-rows-2 gap-4 xl:gap-6 w-full h-full">
+              {images.slice(1, 5).map((img, i) => (
+                <div key={i + 1} className="col-span-1 row-span-1 w-full h-full">
+                  <GalleryCard 
+                    image={img} 
+                    index={i + 1} 
+                    onOpenLightbox={onOpenLightbox} 
+                    overlayText={i === 3 && imageCount > 5 ? `+${imageCount - 5} More` : undefined}
+                  />
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </section>
   );
@@ -613,7 +687,6 @@ interface PlaceVideoProps {
 const PlaceVideo = memo(({ videoUrl, reducedMotion }: PlaceVideoProps) => {
   if (!videoUrl || videoUrl.trim() === "") return null;
 
-  // Transform standard YouTube watch URLs to embedded format
   const getEmbedUrl = (url: string) => {
     let finalUrl = url;
     if (url.includes("youtube.com/watch?v=")) {
@@ -624,8 +697,6 @@ const PlaceVideo = memo(({ videoUrl, reducedMotion }: PlaceVideoProps) => {
     }
     return finalUrl;
   };
-
-  const embedUrl = getEmbedUrl(videoUrl);
 
   return (
     <section className="py-12 md:py-16 px-6 md:px-12 xl:px-20 max-w-[1400px] mx-auto">
@@ -642,10 +713,9 @@ const PlaceVideo = memo(({ videoUrl, reducedMotion }: PlaceVideoProps) => {
         <h2 className="text-2xl sm:text-4xl font-black text-[#0F172A] tracking-tight mb-8">
           Watch Video Tour
         </h2>
-
         <div className="relative w-full aspect-video rounded-[28px] md:rounded-[32px] overflow-hidden shadow-[0_15px_35px_rgba(15,23,42,0.12)] border border-white/40 bg-slate-900">
           <iframe
-            src={embedUrl}
+            src={getEmbedUrl(videoUrl)}
             title="Place Video Tour"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
@@ -669,11 +739,7 @@ interface PlaceLocationProps {
 
 const PlaceLocation = memo(({ place, reducedMotion }: PlaceLocationProps) => {
   const mapUrl = getMapUrl(place);
-  const hasCoords =
-    place.latitude !== undefined &&
-    place.longitude !== undefined &&
-    place.latitude !== "" &&
-    place.longitude !== "";
+  const hasCoords = place.latitude !== undefined && place.longitude !== undefined && place.latitude !== "" && place.longitude !== "";
 
   if (!hasCoords && !mapUrl) return null;
 
@@ -694,7 +760,6 @@ const PlaceLocation = memo(({ place, reducedMotion }: PlaceLocationProps) => {
               Find Your Way
             </h2>
           </div>
-
           {mapUrl && (
             <a
               href={mapUrl}
@@ -707,11 +772,10 @@ const PlaceLocation = memo(({ place, reducedMotion }: PlaceLocationProps) => {
             </a>
           )}
         </div>
-
         {hasCoords && (
           <div className="relative w-full h-[400px] md:h-[480px] rounded-[28px] md:rounded-[32px] overflow-hidden shadow-[0_12px_30px_rgba(15,23,42,0.08)] border border-white/60 bg-slate-200">
             <iframe
-              src={`https://www.google.com/maps?q=${place.latitude},${place.longitude}&z=15&output=embed`}
+              src={`https://www.google.com/maps?q=$${place.latitude},${place.longitude}&z=15&output=embed`}
               title={`Map showing location of ${place.title}`}
               loading="lazy"
               allowFullScreen
@@ -729,15 +793,9 @@ PlaceLocation.displayName = "PlaceLocation";
 // SUB-COMPONENT: PLACE TAGS
 // ============================================================================
 
-interface PlaceTagsProps {
-  tags?: string[];
-}
-
-const PlaceTags = memo(({ tags }: PlaceTagsProps) => {
-  if (!tags || tags.length === 0) return null;
-
-  const validTags = tags.filter((t) => t && t.trim() !== "");
-  if (validTags.length === 0) return null;
+const PlaceTags = memo(({ tags }: { tags?: string[] }) => {
+  const validTags = tags?.filter((t) => t && t.trim() !== "");
+  if (!validTags || validTags.length === 0) return null;
 
   return (
     <section className="py-8 md:py-12 px-6 md:px-12 xl:px-20 max-w-[1400px] mx-auto">
@@ -746,10 +804,7 @@ const PlaceTags = memo(({ tags }: PlaceTagsProps) => {
           Discover More:
         </span>
         {validTags.map((tag, idx) => (
-          <span
-            key={idx}
-            className="px-4 py-2 rounded-full text-xs font-bold text-[#0284C7] bg-[#0284C7]/10 border border-[#0284C7]/20 shadow-xs uppercase tracking-wide backdrop-blur-md"
-          >
+          <span key={idx} className="px-4 py-2 rounded-full text-xs font-bold text-[#0284C7] bg-[#0284C7]/10 border border-[#0284C7]/20 shadow-xs uppercase tracking-wide backdrop-blur-md">
             #{tag}
           </span>
         ))}
@@ -765,7 +820,6 @@ PlaceTags.displayName = "PlaceTags";
 
 const PlaceDetailsSkeleton = memo(() => (
   <div className="w-full min-h-screen bg-[#F8FCFF] animate-pulse">
-    {/* Hero Skeleton */}
     <div className="w-full h-[65vh] lg:h-[80vh] min-h-[480px] bg-slate-300/60 relative">
       <div className="absolute bottom-16 left-6 md:left-12 xl:left-20 max-w-[1400px] w-full pr-12">
         <div className="w-24 h-6 bg-slate-400/60 rounded-full mb-4" />
@@ -777,24 +831,8 @@ const PlaceDetailsSkeleton = memo(() => (
         </div>
       </div>
     </div>
-
-    {/* Information Card Skeleton */}
     <div className="max-w-[1400px] mx-auto px-6 md:px-12 xl:px-20 -mt-16 relative z-20 mb-16">
-      <div
-        className="w-full h-32 rounded-[32px] border bg-slate-200/80 border-white/60 shadow-lg"
-        style={{ backgroundColor: TOKENS.cardBg }}
-      />
-    </div>
-
-    {/* Story Content Skeleton */}
-    <div className="max-w-4xl mx-auto px-6 py-12">
-      <div className="w-28 h-6 bg-slate-300/80 rounded-full mb-4" />
-      <div className="w-2/3 h-10 bg-slate-300/80 rounded-xl mb-8" />
-      <div className="space-y-4">
-        <div className="w-full h-5 bg-slate-200 rounded" />
-        <div className="w-full h-5 bg-slate-200 rounded" />
-        <div className="w-5/6 h-5 bg-slate-200 rounded" />
-      </div>
+      <div className="w-full h-32 rounded-[32px] border bg-slate-200/80 border-white/60 shadow-lg" />
     </div>
   </div>
 ));
@@ -806,30 +844,16 @@ PlaceDetailsSkeleton.displayName = "PlaceDetailsSkeleton";
 
 const PlaceNotFound = memo(() => {
   const router = useRouter();
-
   return (
-    <div
-      className="min-h-screen w-full flex flex-col items-center justify-center px-6 text-center select-none"
-      style={{
-        background: `linear-gradient(180deg, ${TOKENS.bgMain} 0%, ${TOKENS.bgSecondary} 100%)`,
-      }}
-    >
+    <div className="min-h-screen w-full flex flex-col items-center justify-center px-6 text-center select-none" style={{ background: `linear-gradient(180deg, ${TOKENS.bgMain} 0%, ${TOKENS.bgSecondary} 100%)` }}>
       <div className="w-20 h-20 rounded-full bg-[#0284C7]/10 flex items-center justify-center text-[#0284C7] mb-6 shadow-inner border border-[#0284C7]/20">
         <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
       </div>
-      <h1 className="text-3xl sm:text-5xl font-black text-[#0F172A] tracking-tight mb-3">
-        Destination Not Found
-      </h1>
-      <p className="text-base sm:text-lg text-[#64748B] max-w-md mx-auto leading-relaxed mb-8">
-        The place you’re looking for may have been moved or is currently unavailable in our active curation.
-      </p>
-      <button
-        type="button"
-        onClick={() => router.push("/")}
-        className="px-8 py-4 rounded-full font-bold text-xs sm:text-sm tracking-[0.12em] text-white uppercase shadow-[0_6px_20px_rgba(2,132,199,0.35)] hover:shadow-[0_10px_30px_rgba(2,132,199,0.5)] transition-all transform hover:-translate-y-0.5 bg-gradient-to-r from-[#0369A1] to-[#38BDF8] cursor-pointer"
-      >
+      <h1 className="text-3xl sm:text-5xl font-black text-[#0F172A] tracking-tight mb-3">Destination Not Found</h1>
+      <p className="text-base sm:text-lg text-[#64748B] max-w-md mx-auto leading-relaxed mb-8">The place you’re looking for may have been moved or is currently unavailable in our active curation.</p>
+      <button onClick={() => router.push("/")} className="px-8 py-4 rounded-full font-bold text-xs sm:text-sm tracking-[0.12em] text-white uppercase shadow-[0_6px_20px_rgba(2,132,199,0.35)] hover:shadow-[0_10px_30px_rgba(2,132,199,0.5)] transition-all transform hover:-translate-y-0.5 bg-gradient-to-r from-[#0369A1] to-[#38BDF8]">
         Return to Home
       </button>
     </div>
@@ -841,44 +865,22 @@ PlaceNotFound.displayName = "PlaceNotFound";
 // SUB-COMPONENT: ERROR STATE
 // ============================================================================
 
-interface PlaceErrorStateProps {
-  onRetry: () => void;
-}
-
-const PlaceErrorState = memo(({ onRetry }: PlaceErrorStateProps) => {
+const PlaceErrorState = memo(({ onRetry }: { onRetry: () => void }) => {
   const router = useRouter();
-
   return (
-    <div
-      className="min-h-screen w-full flex flex-col items-center justify-center px-6 text-center select-none"
-      style={{
-        background: `linear-gradient(180deg, ${TOKENS.bgMain} 0%, ${TOKENS.bgSecondary} 100%)`,
-      }}
-    >
+    <div className="min-h-screen w-full flex flex-col items-center justify-center px-6 text-center select-none" style={{ background: `linear-gradient(180deg, ${TOKENS.bgMain} 0%, ${TOKENS.bgSecondary} 100%)` }}>
       <div className="w-20 h-20 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 mb-6 shadow-inner border border-amber-500/20">
         <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       </div>
-      <h1 className="text-3xl sm:text-4xl font-black text-[#0F172A] tracking-tight mb-3">
-        Unable to Load Destination
-      </h1>
-      <p className="text-base sm:text-lg text-[#64748B] max-w-md mx-auto leading-relaxed mb-8">
-        We encountered a network issue while retrieving this destination. Please check your connection and try again.
-      </p>
+      <h1 className="text-3xl sm:text-4xl font-black text-[#0F172A] tracking-tight mb-3">Unable to Load Destination</h1>
+      <p className="text-base sm:text-lg text-[#64748B] max-w-md mx-auto leading-relaxed mb-8">We encountered a network issue while retrieving this destination. Please check your connection and try again.</p>
       <div className="flex flex-wrap items-center justify-center gap-4">
-        <button
-          type="button"
-          onClick={onRetry}
-          className="px-8 py-4 rounded-full font-bold text-xs sm:text-sm tracking-[0.12em] text-white uppercase shadow-md hover:shadow-lg transition-all bg-gradient-to-r from-[#0369A1] to-[#38BDF8] cursor-pointer"
-        >
+        <button onClick={onRetry} className="px-8 py-4 rounded-full font-bold text-xs sm:text-sm tracking-[0.12em] text-white uppercase shadow-md hover:shadow-lg transition-all bg-gradient-to-r from-[#0369A1] to-[#38BDF8]">
           Try Again
         </button>
-        <button
-          type="button"
-          onClick={() => router.push("/")}
-          className="px-8 py-4 rounded-full font-bold text-xs sm:text-sm tracking-[0.12em] text-[#0F172A] uppercase bg-white hover:bg-slate-50 border border-slate-200 shadow-sm transition-all cursor-pointer"
-        >
+        <button onClick={() => router.push("/")} className="px-8 py-4 rounded-full font-bold text-xs sm:text-sm tracking-[0.12em] text-[#0F172A] uppercase bg-white hover:bg-slate-50 border border-slate-200 shadow-sm transition-all">
           Return Home
         </button>
       </div>
@@ -909,24 +911,16 @@ export default function PlaceDetailsPage() {
   const fetchPlaceDetails = useCallback(async () => {
     if (!slug) return;
     try {
-      setLoading(true);
-      setError(false);
-      setNotFound(false);
-
+      setLoading(true); setError(false); setNotFound(false);
       const response = await api.get<PlaceApiResponse>(`/api/places/${slug}`);
-
-      if (response && (response.place || response.data)) {
-        const placeData = response.place || response.data;
-        if (placeData && placeData.status === "active") {
-          setPlace(placeData);
-        } else {
-          setNotFound(true);
-        }
+      const placeData = response?.place || response?.data;
+      
+      if (placeData && placeData.status === "active") {
+        setPlace(placeData);
       } else {
         setNotFound(true);
       }
     } catch (err: any) {
-      console.error(`Failed to fetch place details for slug "${slug}":`, err);
       if (err?.status === 404 || err?.message?.includes("404")) {
         setNotFound(true);
       } else {
@@ -941,6 +935,12 @@ export default function PlaceDetailsPage() {
     fetchPlaceDetails();
   }, [fetchPlaceDetails]);
 
+  // Ensure data consistency across the entire component tree
+  const validGalleryImages = useMemo(() => {
+    if (!place?.galleryImages) return [];
+    return place.galleryImages.filter((img) => img && img.image && img.image.trim() !== "");
+  }, [place?.galleryImages]);
+
   const handleOpenLightbox = useCallback((index: number = 0) => {
     setLightboxIndex(index);
     setLightboxOpen(true);
@@ -950,79 +950,40 @@ export default function PlaceDetailsPage() {
     setLightboxOpen(false);
   }, []);
 
-  // 1. Loading Skeleton State
-  if (loading) {
-    return (
-      <main className="min-h-screen flex flex-col bg-[#F8FCFF]">
-        <Navbar />
-        <PlaceDetailsSkeleton />
-      </main>
-    );
-  }
+  if (loading) return <main className="min-h-screen flex flex-col bg-[#F8FCFF]"><Navbar /><PlaceDetailsSkeleton /></main>;
+  if (notFound || !place) return <main className="min-h-screen flex flex-col bg-[#F8FCFF]"><Navbar /><PlaceNotFound /></main>;
+  if (error) return <main className="min-h-screen flex flex-col bg-[#F8FCFF]"><Navbar /><PlaceErrorState onRetry={fetchPlaceDetails} /></main>;
 
-  // 2. Custom Not Found State (404)
-  if (notFound || !place) {
-    return (
-      <main className="min-h-screen flex flex-col bg-[#F8FCFF]">
-        <Navbar />
-        <PlaceNotFound />
-      </main>
-    );
-  }
-
-  // 3. Network Error State
-  if (error) {
-    return (
-      <main className="min-h-screen flex flex-col bg-[#F8FCFF]">
-        <Navbar />
-        <PlaceErrorState onRetry={fetchPlaceDetails} />
-      </main>
-    );
-  }
-
-  // 4. Successful Render
   return (
     <main
       className="min-h-screen flex flex-col pb-24 select-none"
-      style={{
-        background: `linear-gradient(180deg, ${TOKENS.bgMain} 0%, ${TOKENS.bgSecondary} 100%)`,
-      }}
+      style={{ background: `linear-gradient(180deg, ${TOKENS.bgMain} 0%, ${TOKENS.bgSecondary} 100%)` }}
     >
       <Navbar />
-
-      {/* Hero Section */}
+      
       <PlaceHero
         place={place}
+        hasGallery={validGalleryImages.length > 0}
         onOpenGallery={() => handleOpenLightbox(0)}
         reducedMotion={reducedMotion}
       />
 
-      {/* Floating Information Card */}
       <PlaceInformation place={place} reducedMotion={reducedMotion} />
-
-      {/* About / Story Section */}
       <PlaceStory place={place} reducedMotion={reducedMotion} />
-
-      {/* Photo Gallery Section */}
+      
       <PlaceGallery
-        images={place.galleryImages}
+        images={validGalleryImages}
         onOpenLightbox={handleOpenLightbox}
         reducedMotion={reducedMotion}
       />
 
-      {/* Video Section (Only renders when video exists) */}
       <PlaceVideo videoUrl={place.video} reducedMotion={reducedMotion} />
-
-      {/* Location & Interactive Map Section */}
       <PlaceLocation place={place} reducedMotion={reducedMotion} />
-
-      {/* Tags Section */}
       <PlaceTags tags={place.tags} />
 
-      {/* Fullscreen Photo Lightbox Modal */}
-      {lightboxOpen && place.galleryImages && (
+      {lightboxOpen && validGalleryImages.length > 0 && (
         <GalleryLightbox
-          images={place.galleryImages}
+          images={validGalleryImages}
           initialIndex={lightboxIndex}
           onClose={handleCloseLightbox}
         />
