@@ -12,7 +12,6 @@
         <Hero />
         <FeaturedPlaces />
         <CategoryWisePlaces />
-        <ContactForm />
         <section className="pt-20 min-h-screen" />
       </main>
     );
