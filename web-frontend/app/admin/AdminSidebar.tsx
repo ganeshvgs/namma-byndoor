@@ -12,7 +12,6 @@ interface NavItem {
   href: string;
   icon: React.ReactNode;
 }
-
 const NAV_ITEMS: NavItem[] = [
   {
     label: "Dashboard",
@@ -23,7 +22,35 @@ const NAV_ITEMS: NavItem[] = [
       </svg>
     ),
   },
- 
+   {
+    label: "Categories",
+    href: "/admin/categories",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.２５ 0 01-２.２５ ２.２５H6A２.２５ ２.２５ 0 013.75 18v-２.２５zM13.5 6a２.２５ ２.２５ 0 01２.２５-２.２５H18A２.２５ ２.２５ 0 01 twenty point two five sixv twenty point two fiveV6zM13.5 15.75a２.２５ ２.２５ 0 01２.２５-２。２５H18a２。２５ Ｘ１８ｖ－１。１３ｚ" />
+      </svg>
+    ),
+  },
+  {
+    label: "Places",
+    href: "/admin/places",  
+  icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+      </svg>
+    ),
+  },
+  {
+    label: "Hero Videos",
+    href: "/admin/herovideos",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+      </svg>
+    ),
+  },
 ];
 
 // ─── Logo mark ────────────────────────────────────────────────────────────────

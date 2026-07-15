@@ -6,10 +6,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import dynamic from "next/dynamic";
 import { api } from "../../lib/api";
 
-// Assuming existing Layout components are imported from your project structure
+// Existing Layout components
 import Navbar from "../../components/Navbar";
+import PlaceDetailsLoading from "./loading";
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -54,7 +56,7 @@ interface PlaceApiResponse {
 }
 
 // ============================================================================
-// DESIGN TOKENS
+// DESIGN TOKENS & ANTI-FLICKER BLUR PLACEHOLDER
 // ============================================================================
 
 const TOKENS = {
@@ -69,8 +71,81 @@ const TOKENS = {
   muted: "#64748B",
 } as const;
 
+// Base64 SVG Shimmer to prevent white flashing during image decode
+const SHIMMER_BLUR_URL =
+  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNzAwIiBoZWlnaHQ9IjQ3MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2ZXJzaW9uPSIxLjEiPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmM2Y0ZjYiIC8+PHN0b3Agb2Zmc2V0PSI1MCUiIHN0b3AtY29sb3I9IiNlNWU3ZWIiIC8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjZjNmNGY2IiAvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI3MDAiIGhlaWdodD0iNDcwIiBmaWxsPSJ1cmwoI2cpIiAvPjwvc3ZnPg==";
+
 // ============================================================================
-// PREMIUM OUTLINE SVG ICONS
+// STRICT ANIMATION VARIANTS (Animate Once, Smooth Choreography)
+// ============================================================================
+
+const heroVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+const infoContainerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.15,
+    },
+  },
+};
+
+const infoCardVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+const fadeUpVariants = {
+  hidden: { opacity: 0, y: 25 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+const galleryContainerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const galleryCardVariants = {
+  hidden: { opacity: 0, scale: 0.96 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+const fadeVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { duration: 0.7, ease: "easeOut" },
+  },
+};
+
+// ============================================================================
+// PREMIUM OUTLINE SVG ICONS (Memoized)
 // ============================================================================
 
 const CalendarIcon = memo(() => (
@@ -132,7 +207,7 @@ function getMapUrl(place: PlaceDetails): string | null {
     return place.googleMapsUrl;
   }
   if (place.latitude !== undefined && place.longitude !== undefined && place.latitude !== "" && place.longitude !== "") {
-    return `https://www.google.com/maps/search/?api=1&query=$${place.latitude},${place.longitude}`;
+    return `https://maps.google.com/?q=${place.latitude},${place.longitude}`;
   }
   return null;
 }
@@ -161,15 +236,17 @@ const PlaceHero = memo(({ place, hasGallery, onOpenGallery, reducedMotion }: Pla
         priority
         loading="eager"
         sizes="100vw"
+        placeholder="blur"
+        blurDataURL={SHIMMER_BLUR_URL}
         className="object-cover transition-transform duration-1000 ease-out"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-[#0F172A]/40 to-transparent opacity-90 pointer-events-none" />
-      
+
       <div className="absolute inset-0 z-10 flex flex-col justify-end pb-24 md:pb-32 px-6 md:px-12 xl:px-20 max-w-[1400px] mx-auto w-full">
         <motion.div
-          initial={reducedMotion ? undefined : { opacity: 0, y: 24 }}
-          animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          variants={reducedMotion ? undefined : heroVariants}
+          initial="hidden"
+          animate="visible"
           className="max-w-3xl"
         >
           <div className="flex flex-wrap items-center gap-2.5 mb-4">
@@ -227,7 +304,7 @@ const PlaceHero = memo(({ place, hasGallery, onOpenGallery, reducedMotion }: Pla
 PlaceHero.displayName = "PlaceHero";
 
 // ============================================================================
-// SUB-COMPONENT: FLOATING INFORMATION CARD
+// SUB-COMPONENT: FLOATING INFORMATION CARD (Staggered Children)
 // ============================================================================
 
 interface PlaceInformationProps {
@@ -260,16 +337,17 @@ const PlaceInformation = memo(({ place, reducedMotion }: PlaceInformationProps) 
   return (
     <div className="relative z-20 w-full max-w-[1400px] mx-auto px-6 md:px-12 xl:px-20 -mt-14 md:-mt-16 mb-16">
       <motion.div
-        initial={reducedMotion ? undefined : { opacity: 0, y: 24 }}
-        animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+        variants={reducedMotion ? undefined : infoContainerVariants}
+        initial="hidden"
+        animate="visible"
         className="w-full rounded-[28px] md:rounded-[32px] p-6 sm:p-8 border backdrop-blur-2xl shadow-[0_15px_35px_-10px_rgba(15,23,42,0.08),0_4px_12px_rgba(2,132,199,0.04)]"
         style={{ backgroundColor: TOKENS.cardBg, borderColor: TOKENS.border }}
       >
         <div className={`grid grid-cols-2 ${items.length >= 3 ? "lg:grid-cols-4" : "lg:grid-cols-2"} gap-6 sm:gap-8`}>
           {items.map((item, idx) => (
-            <div
+            <motion.div
               key={idx}
+              variants={reducedMotion ? undefined : infoCardVariants}
               className={`flex flex-col sm:flex-row items-start sm:items-center gap-3.5 ${
                 idx !== 0 && idx % 2 === 1 ? "border-l border-slate-200/60 pl-4 sm:pl-6" : ""
               } ${idx >= 2 ? "lg:border-l lg:border-slate-200/60 lg:pl-6 pt-4 sm:pt-0 border-t border-slate-100 sm:border-t-0" : ""}`}
@@ -285,7 +363,7 @@ const PlaceInformation = memo(({ place, reducedMotion }: PlaceInformationProps) 
                   {item.value}
                 </span>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </motion.div>
@@ -295,7 +373,7 @@ const PlaceInformation = memo(({ place, reducedMotion }: PlaceInformationProps) 
 PlaceInformation.displayName = "PlaceInformation";
 
 // ============================================================================
-// SUB-COMPONENT: PLACE STORY / ABOUT
+// SUB-COMPONENT: PLACE STORY / ABOUT (Fade Up Once)
 // ============================================================================
 
 interface PlaceStoryProps {
@@ -310,10 +388,10 @@ const PlaceStory = memo(({ place, reducedMotion }: PlaceStoryProps) => {
   return (
     <section className="py-12 md:py-16 px-6 md:px-12 xl:px-20 max-w-[1400px] mx-auto">
       <motion.div
-        initial={reducedMotion ? undefined : { opacity: 0, y: 20 }}
-        whileInView={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+        variants={reducedMotion ? undefined : fadeUpVariants}
+        initial="hidden"
+        whileInView="visible"
         viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.6 }}
         className="max-w-4xl mx-auto"
       >
         <span className="inline-block px-3.5 py-1 rounded-full text-[11px] font-extrabold tracking-[0.25em] uppercase mb-3 border bg-[#0284C7]/10 text-[#0284C7] border-[#0284C7]/20">
@@ -324,7 +402,9 @@ const PlaceStory = memo(({ place, reducedMotion }: PlaceStoryProps) => {
         </h2>
         <div className="space-y-6 text-base sm:text-lg text-slate-700 font-normal leading-relaxed">
           {paragraphs.map((para, idx) => (
-            <p key={idx} className="leading-8">{para}</p>
+            <p key={idx} className="leading-8">
+              {para}
+            </p>
           ))}
         </div>
       </motion.div>
@@ -346,15 +426,21 @@ interface GalleryLightboxProps {
 const GalleryLightbox = memo(({ images, initialIndex, onClose }: GalleryLightboxProps) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
 
-  const handlePrev = useCallback((e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  }, [images.length]);
+  const handlePrev = useCallback(
+    (e?: React.MouseEvent) => {
+      e?.stopPropagation();
+      setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+    },
+    [images.length]
+  );
 
-  const handleNext = useCallback((e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-  }, [images.length]);
+  const handleNext = useCallback(
+    (e?: React.MouseEvent) => {
+      e?.stopPropagation();
+      setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+    },
+    [images.length]
+  );
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -383,10 +469,12 @@ const GalleryLightbox = memo(({ images, initialIndex, onClose }: GalleryLightbox
         onClick={onClose}
         className="fixed inset-0 z-[9999] bg-[#0F172A]/95 backdrop-blur-xl flex flex-col items-center justify-between p-4 md:p-8 select-none"
       >
-        {/* High-visibility Close Button respecting safe areas */}
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onClose(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
           className="fixed top-[max(1rem,env(safe-area-inset-top))] right-[max(1rem,env(safe-area-inset-right))] z-[10000] w-12 h-12 rounded-full bg-white text-[#0F172A] shadow-[0_4px_20px_rgba(0,0,0,0.3)] flex items-center justify-center hover:scale-105 transition-transform focus:outline-none focus-visible:ring-4 focus-visible:ring-[#38BDF8]"
           aria-label="Close photo gallery"
         >
@@ -395,14 +483,12 @@ const GalleryLightbox = memo(({ images, initialIndex, onClose }: GalleryLightbox
           </svg>
         </button>
 
-        {/* Header Indicator */}
         <div className="w-full max-w-7xl flex items-center justify-center text-white z-10 pt-[env(safe-area-inset-top)]">
           <span className="text-xs md:text-sm font-extrabold tracking-widest uppercase bg-white/10 px-5 py-2 rounded-full border border-white/20 shadow-sm backdrop-blur-md">
             Photo {currentIndex + 1} of {images.length}
           </span>
         </div>
 
-        {/* Main Image Viewport */}
         <div className="relative w-full max-w-7xl flex-1 flex items-center justify-center my-4 overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
@@ -412,20 +498,21 @@ const GalleryLightbox = memo(({ images, initialIndex, onClose }: GalleryLightbox
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.2 }}
               className="relative w-full h-full flex items-center justify-center"
-              onClick={(e) => e.stopPropagation()} // prevent closing when clicking image
+              onClick={(e) => e.stopPropagation()}
             >
               <Image
                 src={images[currentIndex]?.image}
                 alt={`Gallery photo ${currentIndex + 1}`}
                 fill
                 sizes="100vw"
+                placeholder="blur"
+                blurDataURL={SHIMMER_BLUR_URL}
                 className="object-contain"
                 priority
               />
             </motion.div>
           </AnimatePresence>
 
-          {/* Left Arrow */}
           {images.length > 1 && (
             <button
               type="button"
@@ -439,7 +526,6 @@ const GalleryLightbox = memo(({ images, initialIndex, onClose }: GalleryLightbox
             </button>
           )}
 
-          {/* Right Arrow */}
           {images.length > 1 && (
             <button
               type="button"
@@ -454,9 +540,8 @@ const GalleryLightbox = memo(({ images, initialIndex, onClose }: GalleryLightbox
           )}
         </div>
 
-        {/* Bottom Thumbnail Strip */}
         {images.length > 1 && (
-          <div 
+          <div
             className="w-full max-w-4xl flex items-center justify-center gap-3 overflow-x-auto py-4 px-4 scrollbar-none pb-[env(safe-area-inset-bottom)]"
             onClick={(e) => e.stopPropagation()}
           >
@@ -472,7 +557,15 @@ const GalleryLightbox = memo(({ images, initialIndex, onClose }: GalleryLightbox
                     : "border-transparent opacity-40 hover:opacity-100"
                 }`}
               >
-                <Image src={img.image} alt={`Thumbnail ${idx + 1}`} fill sizes="80px" className="object-cover" />
+                <Image
+                  src={img.image}
+                  alt={`Thumbnail ${idx + 1}`}
+                  fill
+                  sizes="80px"
+                  placeholder="blur"
+                  blurDataURL={SHIMMER_BLUR_URL}
+                  className="object-cover"
+                />
               </button>
             ))}
           </div>
@@ -484,7 +577,7 @@ const GalleryLightbox = memo(({ images, initialIndex, onClose }: GalleryLightbox
 GalleryLightbox.displayName = "GalleryLightbox";
 
 // ============================================================================
-// SUB-COMPONENT: PHOTO GALLERY
+// SUB-COMPONENT: PHOTO GALLERY (Stagger + Scale Animations)
 // ============================================================================
 
 interface PlaceGalleryProps {
@@ -493,45 +586,50 @@ interface PlaceGalleryProps {
   reducedMotion: boolean | null;
 }
 
-const GalleryCard = memo(({ 
-  image, 
-  index, 
-  className = "", 
-  overlayText, 
-  onOpenLightbox 
-}: { 
-  image: GalleryImage; 
-  index: number; 
-  className?: string; 
-  overlayText?: string;
-  onOpenLightbox: (idx: number) => void; 
-}) => (
-  <button
-    type="button"
-    onClick={() => onOpenLightbox(index)}
-    aria-label={overlayText ? `View photo ${index + 1} and ${overlayText.toLowerCase()}` : `View photo ${index + 1}`}
-    className={`relative rounded-[24px] overflow-hidden group focus:outline-none focus-visible:ring-4 focus-visible:ring-[#38BDF8] bg-slate-100 shadow-sm hover:shadow-lg transition-shadow duration-300 block w-full h-full ${className}`}
-  >
-    <Image 
-      src={image.image} 
-      alt={`Gallery photo ${index + 1}`} 
-      fill 
-      className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
-      sizes="(max-width: 1440px) 50vw, 100vw" 
-    />
-    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
-    
-    <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/30 opacity-80 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-300 shadow-md">
-      <ExpandArrowsIcon />
-    </div>
+const GalleryCard = memo(
+  ({
+    image,
+    index,
+    className = "",
+    overlayText,
+    onOpenLightbox,
+  }: {
+    image: GalleryImage;
+    index: number;
+    className?: string;
+    overlayText?: string;
+    onOpenLightbox: (idx: number) => void;
+  }) => (
+    <motion.button
+      variants={galleryCardVariants}
+      type="button"
+      onClick={() => onOpenLightbox(index)}
+      aria-label={overlayText ? `View photo ${index + 1} and ${overlayText.toLowerCase()}` : `View photo ${index + 1}`}
+      className={`relative rounded-[24px] overflow-hidden group focus:outline-none focus-visible:ring-4 focus-visible:ring-[#38BDF8] bg-slate-100 shadow-sm hover:shadow-lg transition-shadow duration-300 block w-full h-full ${className}`}
+    >
+      <Image
+        src={image.image}
+        alt={`Gallery photo ${index + 1}`}
+        fill
+        placeholder="blur"
+        blurDataURL={SHIMMER_BLUR_URL}
+        className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+        sizes="(max-width: 768px) 85vw, (max-width: 1440px) 50vw, 33vw"
+      />
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
 
-    {overlayText && (
-      <div className="absolute inset-0 bg-[#0F172A]/70 backdrop-blur-sm flex items-center justify-center text-white font-black text-xl md:text-2xl tracking-wider">
-        {overlayText}
+      <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/30 opacity-80 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-300 shadow-md">
+        <ExpandArrowsIcon />
       </div>
-    )}
-  </button>
-));
+
+      {overlayText && (
+        <div className="absolute inset-0 bg-[#0F172A]/70 backdrop-blur-sm flex items-center justify-center text-white font-black text-xl md:text-2xl tracking-wider">
+          {overlayText}
+        </div>
+      )}
+    </motion.button>
+  )
+);
 GalleryCard.displayName = "GalleryCard";
 
 const PlaceGallery = memo(({ images, onOpenLightbox, reducedMotion }: PlaceGalleryProps) => {
@@ -545,21 +643,24 @@ const PlaceGallery = memo(({ images, onOpenLightbox, reducedMotion }: PlaceGalle
           <span className="inline-block px-3.5 py-1 rounded-full text-[11px] font-extrabold tracking-[0.25em] uppercase mb-3 border bg-[#0284C7]/10 text-[#0284C7] border-[#0284C7]/20">
             PHOTO GALLERY
           </span>
-          <h2 className="text-2xl sm:text-4xl font-black text-[#0F172A] tracking-tight">
-            Visual Exploration
-          </h2>
+          <h2 className="text-2xl sm:text-4xl font-black text-[#0F172A] tracking-tight">Visual Exploration</h2>
         </div>
       </div>
 
-      {/* ── MOBILE LAYOUT (< 768px) ── */}
+      {/* MOBILE LAYOUT (< 768px) */}
       <div className="md:hidden">
         <div className="flex items-center justify-between mb-3 px-6">
           <span className="text-xs font-bold text-[#64748B] flex items-center gap-1.5">
-            Swipe to explore photos 
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+            Swipe to explore photos
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
           </span>
         </div>
-        <div className="flex gap-4 overflow-x-auto pb-6 px-6 snap-x snap-mandatory scrollbar-none w-full" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+        <div
+          className="flex gap-4 overflow-x-auto pb-6 px-6 snap-x snap-mandatory scrollbar-none w-full"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
           {images.map((img, idx) => (
             <button
               key={idx}
@@ -568,7 +669,15 @@ const PlaceGallery = memo(({ images, onOpenLightbox, reducedMotion }: PlaceGalle
               aria-label={`View photo ${idx + 1} of ${imageCount}`}
               className="relative w-[85vw] max-w-[400px] aspect-[4/3] rounded-[24px] shrink-0 snap-center overflow-hidden shadow-md focus:outline-none focus-visible:ring-4 focus-visible:ring-[#38BDF8] group bg-slate-100"
             >
-              <Image src={img.image} alt={`Gallery mobile ${idx + 1}`} fill sizes="(max-width: 768px) 85vw, 400px" className="object-cover" />
+              <Image
+                src={img.image}
+                alt={`Gallery mobile ${idx + 1}`}
+                fill
+                sizes="(max-width: 768px) 85vw, 400px"
+                placeholder="blur"
+                blurDataURL={SHIMMER_BLUR_URL}
+                className="object-cover"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
               <div className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/30 shadow-md">
                 <ExpandArrowsIcon />
@@ -581,22 +690,34 @@ const PlaceGallery = memo(({ images, onOpenLightbox, reducedMotion }: PlaceGalle
         </div>
       </div>
 
-      {/* ── TABLET LAYOUT (768px - 1023px) ── */}
-      <div className="hidden md:flex lg:hidden flex-col gap-5 h-[700px]">
-        {/* Always large featured top image on tablet */}
+      {/* TABLET LAYOUT (768px - 1023px) */}
+      <motion.div
+        variants={reducedMotion ? undefined : galleryContainerVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-50px" }}
+        className="hidden md:flex lg:hidden flex-col gap-5 h-[700px]"
+      >
         <div className="w-full flex-[1.2] relative rounded-[28px] overflow-hidden">
-           <GalleryCard image={images[0]} index={0} onOpenLightbox={onOpenLightbox} className="w-full h-full" />
+          <GalleryCard image={images[0]} index={0} onOpenLightbox={onOpenLightbox} className="w-full h-full" />
         </div>
-        {/* Dynamic bottom grid for remaining items */}
         {imageCount > 1 && (
-          <div className={`w-full flex-1 grid gap-5 ${
-            imageCount === 2 ? 'grid-cols-1' : imageCount === 3 ? 'grid-cols-2' : imageCount === 4 ? 'grid-cols-3' : 'grid-cols-4'
-          }`}>
+          <div
+            className={`w-full flex-1 grid gap-5 ${
+              imageCount === 2
+                ? "grid-cols-1"
+                : imageCount === 3
+                ? "grid-cols-2"
+                : imageCount === 4
+                ? "grid-cols-3"
+                : "grid-cols-4"
+            }`}
+          >
             {images.slice(1, 5).map((img, i) => (
-              <GalleryCard 
-                key={i + 1} 
-                image={img} 
-                index={i + 1} 
+              <GalleryCard
+                key={i + 1}
+                image={img}
+                index={i + 1}
                 onOpenLightbox={onOpenLightbox}
                 className="w-full h-full"
                 overlayText={i === 3 && imageCount > 5 ? `+${imageCount - 5}` : undefined}
@@ -604,16 +725,22 @@ const PlaceGallery = memo(({ images, onOpenLightbox, reducedMotion }: PlaceGalle
             ))}
           </div>
         )}
-      </div>
+      </motion.div>
 
-      {/* ── LAPTOP & DESKTOP LAYOUT (>= 1024px) ── */}
-      <div className="hidden lg:grid grid-cols-12 gap-6 h-[500px] xl:h-[600px]">
+      {/* LAPTOP & DESKTOP LAYOUT (>= 1024px) */}
+      <motion.div
+        variants={reducedMotion ? undefined : galleryContainerVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-50px" }}
+        className="hidden lg:grid grid-cols-12 gap-6 h-[500px] xl:h-[600px]"
+      >
         {imageCount === 1 && (
           <div className="col-span-12 w-full h-full">
             <GalleryCard image={images[0]} index={0} onOpenLightbox={onOpenLightbox} />
           </div>
         )}
-        
+
         {imageCount === 2 && (
           <>
             <div className="col-span-6 w-full h-full">
@@ -624,32 +751,42 @@ const PlaceGallery = memo(({ images, onOpenLightbox, reducedMotion }: PlaceGalle
             </div>
           </>
         )}
-        
+
         {imageCount === 3 && (
           <>
             <div className="col-span-8 w-full h-full">
               <GalleryCard image={images[0]} index={0} onOpenLightbox={onOpenLightbox} />
             </div>
             <div className="col-span-4 flex flex-col gap-6 w-full h-full">
-              <div className="flex-1"><GalleryCard image={images[1]} index={1} onOpenLightbox={onOpenLightbox} /></div>
-              <div className="flex-1"><GalleryCard image={images[2]} index={2} onOpenLightbox={onOpenLightbox} /></div>
+              <div className="flex-1">
+                <GalleryCard image={images[1]} index={1} onOpenLightbox={onOpenLightbox} />
+              </div>
+              <div className="flex-1">
+                <GalleryCard image={images[2]} index={2} onOpenLightbox={onOpenLightbox} />
+              </div>
             </div>
           </>
         )}
-        
+
         {imageCount === 4 && (
           <>
             <div className="col-span-8 w-full h-full">
               <GalleryCard image={images[0]} index={0} onOpenLightbox={onOpenLightbox} />
             </div>
             <div className="col-span-4 grid grid-cols-2 grid-rows-2 gap-6 w-full h-full">
-              <div className="col-span-2 row-span-1"><GalleryCard image={images[1]} index={1} onOpenLightbox={onOpenLightbox} /></div>
-              <div className="col-span-1 row-span-1"><GalleryCard image={images[2]} index={2} onOpenLightbox={onOpenLightbox} /></div>
-              <div className="col-span-1 row-span-1"><GalleryCard image={images[3]} index={3} onOpenLightbox={onOpenLightbox} /></div>
+              <div className="col-span-2 row-span-1">
+                <GalleryCard image={images[1]} index={1} onOpenLightbox={onOpenLightbox} />
+              </div>
+              <div className="col-span-1 row-span-1">
+                <GalleryCard image={images[2]} index={2} onOpenLightbox={onOpenLightbox} />
+              </div>
+              <div className="col-span-1 row-span-1">
+                <GalleryCard image={images[3]} index={3} onOpenLightbox={onOpenLightbox} />
+              </div>
             </div>
           </>
         )}
-        
+
         {imageCount >= 5 && (
           <>
             <div className="col-span-7 xl:col-span-8 w-full h-full">
@@ -658,10 +795,10 @@ const PlaceGallery = memo(({ images, onOpenLightbox, reducedMotion }: PlaceGalle
             <div className="col-span-5 xl:col-span-4 grid grid-cols-2 grid-rows-2 gap-4 xl:gap-6 w-full h-full">
               {images.slice(1, 5).map((img, i) => (
                 <div key={i + 1} className="col-span-1 row-span-1 w-full h-full">
-                  <GalleryCard 
-                    image={img} 
-                    index={i + 1} 
-                    onOpenLightbox={onOpenLightbox} 
+                  <GalleryCard
+                    image={img}
+                    index={i + 1}
+                    onOpenLightbox={onOpenLightbox}
                     overlayText={i === 3 && imageCount > 5 ? `+${imageCount - 5} More` : undefined}
                   />
                 </div>
@@ -669,14 +806,14 @@ const PlaceGallery = memo(({ images, onOpenLightbox, reducedMotion }: PlaceGalle
             </div>
           </>
         )}
-      </div>
+      </motion.div>
     </section>
   );
 });
 PlaceGallery.displayName = "PlaceGallery";
 
 // ============================================================================
-// SUB-COMPONENT: PLACE VIDEO
+// SUB-COMPONENT: PLACE VIDEO (Fade Up Once)
 // ============================================================================
 
 interface PlaceVideoProps {
@@ -701,18 +838,16 @@ const PlaceVideo = memo(({ videoUrl, reducedMotion }: PlaceVideoProps) => {
   return (
     <section className="py-12 md:py-16 px-6 md:px-12 xl:px-20 max-w-[1400px] mx-auto">
       <motion.div
-        initial={reducedMotion ? undefined : { opacity: 0, y: 20 }}
-        whileInView={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+        variants={reducedMotion ? undefined : fadeUpVariants}
+        initial="hidden"
+        whileInView="visible"
         viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.6 }}
         className="max-w-4xl mx-auto"
       >
         <span className="inline-block px-3.5 py-1 rounded-full text-[11px] font-extrabold tracking-[0.25em] uppercase mb-3 border bg-[#0284C7]/10 text-[#0284C7] border-[#0284C7]/20">
           CINEMATIC EXPERIENCE
         </span>
-        <h2 className="text-2xl sm:text-4xl font-black text-[#0F172A] tracking-tight mb-8">
-          Watch Video Tour
-        </h2>
+        <h2 className="text-2xl sm:text-4xl font-black text-[#0F172A] tracking-tight mb-8">Watch Video Tour</h2>
         <div className="relative w-full aspect-video rounded-[28px] md:rounded-[32px] overflow-hidden shadow-[0_15px_35px_rgba(15,23,42,0.12)] border border-white/40 bg-slate-900">
           <iframe
             src={getEmbedUrl(videoUrl)}
@@ -729,7 +864,7 @@ const PlaceVideo = memo(({ videoUrl, reducedMotion }: PlaceVideoProps) => {
 PlaceVideo.displayName = "PlaceVideo";
 
 // ============================================================================
-// SUB-COMPONENT: PLACE LOCATION & MAP
+// SUB-COMPONENT: PLACE LOCATION & MAP (Fade Once)
 // ============================================================================
 
 interface PlaceLocationProps {
@@ -739,26 +874,25 @@ interface PlaceLocationProps {
 
 const PlaceLocation = memo(({ place, reducedMotion }: PlaceLocationProps) => {
   const mapUrl = getMapUrl(place);
-  const hasCoords = place.latitude !== undefined && place.longitude !== undefined && place.latitude !== "" && place.longitude !== "";
+  const hasCoords =
+    place.latitude !== undefined && place.longitude !== undefined && place.latitude !== "" && place.longitude !== "";
 
   if (!hasCoords && !mapUrl) return null;
 
   return (
     <section className="py-12 md:py-16 px-6 md:px-12 xl:px-20 max-w-[1400px] mx-auto">
       <motion.div
-        initial={reducedMotion ? undefined : { opacity: 0, y: 20 }}
-        whileInView={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+        variants={reducedMotion ? undefined : fadeVariants}
+        initial="hidden"
+        whileInView="visible"
         viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.6 }}
       >
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
           <div>
             <span className="inline-block px-3.5 py-1 rounded-full text-[11px] font-extrabold tracking-[0.25em] uppercase mb-3 border bg-[#0284C7]/10 text-[#0284C7] border-[#0284C7]/20">
               LOCATION
             </span>
-            <h2 className="text-2xl sm:text-4xl font-black text-[#0F172A] tracking-tight">
-              Find Your Way
-            </h2>
+            <h2 className="text-2xl sm:text-4xl font-black text-[#0F172A] tracking-tight">Find Your Way</h2>
           </div>
           {mapUrl && (
             <a
@@ -775,7 +909,7 @@ const PlaceLocation = memo(({ place, reducedMotion }: PlaceLocationProps) => {
         {hasCoords && (
           <div className="relative w-full h-[400px] md:h-[480px] rounded-[28px] md:rounded-[32px] overflow-hidden shadow-[0_12px_30px_rgba(15,23,42,0.08)] border border-white/60 bg-slate-200">
             <iframe
-              src={`https://www.google.com/maps?q=$${place.latitude},${place.longitude}&z=15&output=embed`}
+              src={`https://maps.google.com/maps?q=${place.latitude},${place.longitude}&z=15&output=embed`}
               title={`Map showing location of ${place.title}`}
               loading="lazy"
               allowFullScreen
@@ -800,11 +934,12 @@ const PlaceTags = memo(({ tags }: { tags?: string[] }) => {
   return (
     <section className="py-8 md:py-12 px-6 md:px-12 xl:px-20 max-w-[1400px] mx-auto">
       <div className="flex flex-wrap items-center gap-2.5">
-        <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider mr-2">
-          Discover More:
-        </span>
+        <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider mr-2">Discover More:</span>
         {validTags.map((tag, idx) => (
-          <span key={idx} className="px-4 py-2 rounded-full text-xs font-bold text-[#0284C7] bg-[#0284C7]/10 border border-[#0284C7]/20 shadow-xs uppercase tracking-wide backdrop-blur-md">
+          <span
+            key={idx}
+            className="px-4 py-2 rounded-full text-xs font-bold text-[#0284C7] bg-[#0284C7]/10 border border-[#0284C7]/20 shadow-xs uppercase tracking-wide backdrop-blur-md"
+          >
             #{tag}
           </span>
         ))}
@@ -815,45 +950,33 @@ const PlaceTags = memo(({ tags }: { tags?: string[] }) => {
 PlaceTags.displayName = "PlaceTags";
 
 // ============================================================================
-// SUB-COMPONENT: SKELETON LOADING STATE
-// ============================================================================
-
-const PlaceDetailsSkeleton = memo(() => (
-  <div className="w-full min-h-screen bg-[#F8FCFF] animate-pulse">
-    <div className="w-full h-[65vh] lg:h-[80vh] min-h-[480px] bg-slate-300/60 relative">
-      <div className="absolute bottom-16 left-6 md:left-12 xl:left-20 max-w-[1400px] w-full pr-12">
-        <div className="w-24 h-6 bg-slate-400/60 rounded-full mb-4" />
-        <div className="w-3/4 max-w-xl h-12 bg-slate-400/60 rounded-xl mb-4" />
-        <div className="w-full max-w-2xl h-16 bg-slate-400/40 rounded-xl mb-6" />
-        <div className="flex gap-4">
-          <div className="w-36 h-12 bg-slate-400/60 rounded-full" />
-          <div className="w-36 h-12 bg-slate-400/60 rounded-full" />
-        </div>
-      </div>
-    </div>
-    <div className="max-w-[1400px] mx-auto px-6 md:px-12 xl:px-20 -mt-16 relative z-20 mb-16">
-      <div className="w-full h-32 rounded-[32px] border bg-slate-200/80 border-white/60 shadow-lg" />
-    </div>
-  </div>
-));
-PlaceDetailsSkeleton.displayName = "PlaceDetailsSkeleton";
-
-// ============================================================================
-// SUB-COMPONENT: NOT FOUND STATE (404)
+// ERROR & 404 STATES
 // ============================================================================
 
 const PlaceNotFound = memo(() => {
   const router = useRouter();
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center px-6 text-center select-none" style={{ background: `linear-gradient(180deg, ${TOKENS.bgMain} 0%, ${TOKENS.bgSecondary} 100%)` }}>
+    <div
+      className="min-h-screen w-full flex flex-col items-center justify-center px-6 text-center select-none"
+      style={{ background: `linear-gradient(180deg, ${TOKENS.bgMain} 0%, ${TOKENS.bgSecondary} 100%)` }}
+    >
       <div className="w-20 h-20 rounded-full bg-[#0284C7]/10 flex items-center justify-center text-[#0284C7] mb-6 shadow-inner border border-[#0284C7]/20">
         <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
         </svg>
       </div>
       <h1 className="text-3xl sm:text-5xl font-black text-[#0F172A] tracking-tight mb-3">Destination Not Found</h1>
-      <p className="text-base sm:text-lg text-[#64748B] max-w-md mx-auto leading-relaxed mb-8">The place you’re looking for may have been moved or is currently unavailable in our active curation.</p>
-      <button onClick={() => router.push("/")} className="px-8 py-4 rounded-full font-bold text-xs sm:text-sm tracking-[0.12em] text-white uppercase shadow-[0_6px_20px_rgba(2,132,199,0.35)] hover:shadow-[0_10px_30px_rgba(2,132,199,0.5)] transition-all transform hover:-translate-y-0.5 bg-gradient-to-r from-[#0369A1] to-[#38BDF8]">
+      <p className="text-base sm:text-lg text-[#64748B] max-w-md mx-auto leading-relaxed mb-8">
+        The place you’re looking for may have been moved or is currently unavailable in our active curation.
+      </p>
+      <button
+        onClick={() => router.push("/")}
+        className="px-8 py-4 rounded-full font-bold text-xs sm:text-sm tracking-[0.12em] text-white uppercase shadow-[0_6px_20px_rgba(2,132,199,0.35)] hover:shadow-[0_10px_30px_rgba(2,132,199,0.5)] transition-all transform hover:-translate-y-0.5 bg-gradient-to-r from-[#0369A1] to-[#38BDF8]"
+      >
         Return to Home
       </button>
     </div>
@@ -861,26 +984,33 @@ const PlaceNotFound = memo(() => {
 });
 PlaceNotFound.displayName = "PlaceNotFound";
 
-// ============================================================================
-// SUB-COMPONENT: ERROR STATE
-// ============================================================================
-
 const PlaceErrorState = memo(({ onRetry }: { onRetry: () => void }) => {
   const router = useRouter();
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center px-6 text-center select-none" style={{ background: `linear-gradient(180deg, ${TOKENS.bgMain} 0%, ${TOKENS.bgSecondary} 100%)` }}>
+    <div
+      className="min-h-screen w-full flex flex-col items-center justify-center px-6 text-center select-none"
+      style={{ background: `linear-gradient(180deg, ${TOKENS.bgMain} 0%, ${TOKENS.bgSecondary} 100%)` }}
+    >
       <div className="w-20 h-20 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 mb-6 shadow-inner border border-amber-500/20">
         <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       </div>
       <h1 className="text-3xl sm:text-4xl font-black text-[#0F172A] tracking-tight mb-3">Unable to Load Destination</h1>
-      <p className="text-base sm:text-lg text-[#64748B] max-w-md mx-auto leading-relaxed mb-8">We encountered a network issue while retrieving this destination. Please check your connection and try again.</p>
+      <p className="text-base sm:text-lg text-[#64748B] max-w-md mx-auto leading-relaxed mb-8">
+        We encountered a network issue while retrieving this destination. Please check your connection and try again.
+      </p>
       <div className="flex flex-wrap items-center justify-center gap-4">
-        <button onClick={onRetry} className="px-8 py-4 rounded-full font-bold text-xs sm:text-sm tracking-[0.12em] text-white uppercase shadow-md hover:shadow-lg transition-all bg-gradient-to-r from-[#0369A1] to-[#38BDF8]">
+        <button
+          onClick={onRetry}
+          className="px-8 py-4 rounded-full font-bold text-xs sm:text-sm tracking-[0.12em] text-white uppercase shadow-md hover:shadow-lg transition-all bg-gradient-to-r from-[#0369A1] to-[#38BDF8]"
+        >
           Try Again
         </button>
-        <button onClick={() => router.push("/")} className="px-8 py-4 rounded-full font-bold text-xs sm:text-sm tracking-[0.12em] text-[#0F172A] uppercase bg-white hover:bg-slate-50 border border-slate-200 shadow-sm transition-all">
+        <button
+          onClick={() => router.push("/")}
+          className="px-8 py-4 rounded-full font-bold text-xs sm:text-sm tracking-[0.12em] text-[#0F172A] uppercase bg-white hover:bg-slate-50 border border-slate-200 shadow-sm transition-all"
+        >
           Return Home
         </button>
       </div>
@@ -911,10 +1041,12 @@ export default function PlaceDetailsPage() {
   const fetchPlaceDetails = useCallback(async () => {
     if (!slug) return;
     try {
-      setLoading(true); setError(false); setNotFound(false);
+      setLoading(true);
+      setError(false);
+      setNotFound(false);
       const response = await api.get<PlaceApiResponse>(`/api/places/${slug}`);
       const placeData = response?.place || response?.data;
-      
+
       if (placeData && placeData.status === "active") {
         setPlace(placeData);
       } else {
@@ -935,7 +1067,6 @@ export default function PlaceDetailsPage() {
     fetchPlaceDetails();
   }, [fetchPlaceDetails]);
 
-  // Ensure data consistency across the entire component tree
   const validGalleryImages = useMemo(() => {
     if (!place?.galleryImages) return [];
     return place.galleryImages.filter((img) => img && img.image && img.image.trim() !== "");
@@ -950,17 +1081,30 @@ export default function PlaceDetailsPage() {
     setLightboxOpen(false);
   }, []);
 
-  if (loading) return <main className="min-h-screen flex flex-col bg-[#F8FCFF]"><Navbar /><PlaceDetailsSkeleton /></main>;
-  if (notFound || !place) return <main className="min-h-screen flex flex-col bg-[#F8FCFF]"><Navbar /><PlaceNotFound /></main>;
-  if (error) return <main className="min-h-screen flex flex-col bg-[#F8FCFF]"><Navbar /><PlaceErrorState onRetry={fetchPlaceDetails} /></main>;
+  // Return Route-Level Skeleton directly while hydrating/fetching
+  if (loading) return <PlaceDetailsLoading />;
+  if (notFound || !place)
+    return (
+      <main className="min-h-screen flex flex-col bg-[#F8FCFF]">
+        <Navbar />
+        <PlaceNotFound />
+      </main>
+    );
+  if (error)
+    return (
+      <main className="min-h-screen flex flex-col bg-[#F8FCFF]">
+        <Navbar />
+        <PlaceErrorState onRetry={fetchPlaceDetails} />
+      </main>
+    );
 
   return (
     <main
-      className="min-h-screen flex flex-col pb-24 select-none"
+      className="min-h-screen flex flex-col pb-24 select-none overflow-x-hidden"
       style={{ background: `linear-gradient(180deg, ${TOKENS.bgMain} 0%, ${TOKENS.bgSecondary} 100%)` }}
     >
       <Navbar />
-      
+
       <PlaceHero
         place={place}
         hasGallery={validGalleryImages.length > 0}
@@ -970,7 +1114,7 @@ export default function PlaceDetailsPage() {
 
       <PlaceInformation place={place} reducedMotion={reducedMotion} />
       <PlaceStory place={place} reducedMotion={reducedMotion} />
-      
+
       <PlaceGallery
         images={validGalleryImages}
         onOpenLightbox={handleOpenLightbox}
@@ -982,11 +1126,7 @@ export default function PlaceDetailsPage() {
       <PlaceTags tags={place.tags} />
 
       {lightboxOpen && validGalleryImages.length > 0 && (
-        <GalleryLightbox
-          images={validGalleryImages}
-          initialIndex={lightboxIndex}
-          onClose={handleCloseLightbox}
-        />
+        <GalleryLightbox images={validGalleryImages} initialIndex={lightboxIndex} onClose={handleCloseLightbox} />
       )}
     </main>
   );
