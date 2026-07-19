@@ -503,9 +503,6 @@ export default function CategoryWisePlaces() {
         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#0F172A] tracking-tight leading-[1.15] mb-3">
           Find Places You’ll Love
         </h2>
-        <p className="text-sm sm:text-base lg:text-lg text-[#64748B] font-normal leading-relaxed max-w-2xl">
-          From peaceful beaches and sacred temples to hidden waterfalls, explore Byndoor through experiences that inspire you.
-        </p>
       </div>
 
       {/* Dynamic Navigation & Content States */}

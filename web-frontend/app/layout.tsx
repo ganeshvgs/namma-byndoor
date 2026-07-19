@@ -1,3 +1,4 @@
+//path web-frontend/app/layout.tsx
 "use client";
 
 import "./globals.css";
@@ -11,26 +12,53 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-
-  // Show loader only on homepage
   const isHome = pathname === "/";
 
-  // Initial state
-  const [loading, setLoading] = useState(isHome);
+  const [loading, setLoading] = useState(false);
 
-  // Handle route changes
   useEffect(() => {
-    if (isHome) {
-      setLoading(true);
-    } else {
+    // No loader on other pages
+    if (!isHome) {
       setLoading(false);
+      return;
     }
-  }, [isHome]);
 
-  // Lock scrolling while loader is visible
+    // Show loader only once per browser session
+    const hasVisited = sessionStorage.getItem("namma-byndoor-loader");
+
+    if (hasVisited) {
+      setLoading(false);
+      return;
+    }
+
+    sessionStorage.setItem("namma-byndoor-loader", "true");
+    setLoading(true);
+
+    // Main loader duration
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 4000);
+
+    // Failsafe (prevents permanent loader)
+    const failsafe = setTimeout(() => {
+      setLoading(false);
+    }, 6000);
+
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(failsafe);
+    };
+  }, [pathname, isHome]);
+
+  // Prevent scrolling while loader is visible
   useEffect(() => {
-    document.documentElement.style.overflow = loading ? "hidden" : "";
-    document.body.style.overflow = loading ? "hidden" : "";
+    if (loading) {
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.overflow = "hidden";
+    } else {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    }
 
     return () => {
       document.documentElement.style.overflow = "";
@@ -43,13 +71,7 @@ export default function RootLayout({
       <body suppressHydrationWarning>
         {children}
 
-        {loading && isHome && (
-          <Loader
-            onComplete={() => {
-              setLoading(false);
-            }}
-          />
-        )}
+        {loading && isHome && <Loader />}
       </body>
     </html>
   );
