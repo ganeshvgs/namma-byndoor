@@ -23,8 +23,7 @@
   box-sizing: border-box;
 }
 
-html,
-body {
+html, body {
   width: 100%;
   min-height: 100%;
   margin: 0;
@@ -40,15 +39,37 @@ body {
 }
 
 /* ==========================================================================
-   PRE-HYDRATION FLASH PREVENTION
-   Hides main content before React loads JavaScript on first visit.
-   Once <Loader> mounts with z-[9999], the script removes this attribute.
+   PRE-HYDRATION & REVEAL ANIMATIONS
    ========================================================================== */
-html[data-loading="true"] body {
+
+/* Lock scrolling while loader is active */
+html.is-loading body {
   overflow: hidden !important;
 }
 
-html[data-loading="true"] #main-content {
-  visibility: hidden;
+/* Premium smooth reveal for the main content */
+#main-content {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Initial hidden state before JS boots */
+html.is-loading #main-content {
   opacity: 0;
+  transform: scale(0.97); /* Slight scale down for cinematic reveal */
+  transition: none; /* No transition while instantly hiding */
+  pointer-events: none;
+}
+
+/* Extreme Edge-case Failsafe: If JS completely crashes, reveal content after 10s */
+@keyframes forceReveal {
+  to {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+  }
+}
+html.is-loading #main-content {
+  animation: forceReveal 0.1s 10s forwards;
 }

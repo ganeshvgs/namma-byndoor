@@ -11,6 +11,7 @@ import {
   useReducedMotion
 } from "framer-motion";
 import { api } from "../lib/api";
+import { useLoader } from "../providers/LoaderProvider"; // <-- IMPORT ADDED
 
 // ==========================================
 // TYPES
@@ -34,11 +35,10 @@ interface VideoCardProps {
   video: VideoData;
   isMobile: boolean;
   isFirst: boolean;
+  markVideoReady: () => void; // <-- ADDED PROP
 }
 
-// ==========================================
-// ANIMATION VARIANTS
-// ==========================================
+// ... (KEEP ALL YOUR VARIANTS AND UTILS EXACTLY AS THEY WERE) ...
 
 const heroVariants: Variants = {
   heroHidden: { opacity: 0, y: 12 },
@@ -84,13 +84,9 @@ const titleLetter: Variants = {
   },
   exit: {
     opacity: 0,
-    transition: { duration: 0 }, // Instant exit to prevent flickering between hovers
+    transition: { duration: 0 },
   },
 };
-
-// ==========================================
-// UTILS & HOOKS
-// ==========================================
 
 const useResponsiveLayout = () => {
   const [layout, setLayout] = useState({
@@ -108,7 +104,6 @@ const useResponsiveLayout = () => {
         const isTablet = width >= 768 && width < 1280;
         const isDesktop = width >= 1280;
         
-        // Prevent unnecessary state updates if nothing changed
         if (
           prev.isMobile === isMobile &&
           prev.isTablet === isTablet &&
@@ -187,8 +182,6 @@ const HeroOverlay = memo(({ activeVideo }: { activeVideo: VideoData }) => {
         </span>
       </motion.div>
 
-      
-
       <motion.p
         variants={overlayVariants}
         initial="hidden"
@@ -213,7 +206,7 @@ const HeroOverlay = memo(({ activeVideo }: { activeVideo: VideoData }) => {
 });
 HeroOverlay.displayName = "HeroOverlay";
 
-const VideoCard = memo(({ video, isMobile, isFirst }: VideoCardProps) => {
+const VideoCard = memo(({ video, isMobile, isFirst, markVideoReady }: VideoCardProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const shouldReduceMotion = useReducedMotion();
@@ -225,7 +218,6 @@ const VideoCard = memo(({ video, isMobile, isFirst }: VideoCardProps) => {
   const springX = useSpring(mouseX, springConfig);
   const springY = useSpring(mouseY, springConfig);
 
-  // Reduced intensity parallax for premium feel
   const videoX = useTransform(springX, [-0.5, 0.5], [-1.5, 1.5]);
   const videoY = useTransform(springY, [-0.5, 0.5], [-1.5, 1.5]);
 
@@ -249,7 +241,11 @@ const VideoCard = memo(({ video, isMobile, isFirst }: VideoCardProps) => {
 
   const handleCanPlay = useCallback(() => {
     setIsLoaded(true);
-  }, []);
+    // Tell the global loader that the first video is ready to be shown
+    if (isFirst) {
+      markVideoReady();
+    }
+  }, [isFirst, markVideoReady]);
 
   return (
     <div
@@ -290,6 +286,7 @@ export default function Hero() {
   const [videos, setVideos] = useState<VideoData[]>([]);
   const [hoveredIndex, setHoveredIndex] = useState<number>(0);
   const { isMobile, isTablet, isDesktop, mounted } = useResponsiveLayout();
+  const { markVideoReady } = useLoader(); // <-- PULLING FROM CONTEXT
 
   useEffect(() => {
     let isSubscribed = true;
@@ -301,16 +298,23 @@ export default function Hero() {
           const activeVideos = data.videos
             .filter((v) => v.status === "active")
             .sort((a, b) => a.priority - b.priority);
+            
+          if (activeVideos.length === 0) {
+            markVideoReady(); // Failsafe: Unblock loader if no videos exist
+          }
           setVideos(activeVideos);
+        } else {
+          markVideoReady(); // Failsafe
         }
       } catch (error) {
         console.error("Hero video fetch error:", error);
+        markVideoReady(); // Failsafe: Don't hang loader on network error
       }
     };
 
     fetchVideos();
     return () => { isSubscribed = false; };
-  }, []);
+  }, [markVideoReady]);
 
   const displayCount = useMemo(() => {
     if (!mounted) return 1;
@@ -361,17 +365,14 @@ export default function Hero() {
       role="banner"
       onMouseLeave={handleHeroMouseLeave}
     >
-      {/* Centralized Global Overlays for a seamless cinematic panorama feel */}
       <div className="absolute inset-0 z-20 pointer-events-none">
         <div className="absolute top-0 w-full h-56 bg-gradient-to-b from-[#0284C7]/20 to-transparent mix-blend-multiply" />
         <div className="absolute bottom-0 w-full h-80 bg-gradient-to-t from-[#0F172A] via-[#0F172A]/60 to-transparent" />
         <div className="absolute inset-0 bg-[#0F172A]/15" />
       </div>
 
-      {/* Centralized Singular Content */}
       {activeVideo && <HeroOverlay activeVideo={activeVideo} />}
 
-      {/* Panoramic Video Background */}
       <div className="absolute inset-0 w-full h-full z-10">
         <AnimatePresence>
           {videoLayouts.map(({ video, index, isFirst, style }) => (
@@ -382,7 +383,12 @@ export default function Hero() {
               style={style}
               onMouseEnter={handleMouseEnter}
             >
-              <VideoCard video={video} isMobile={isMobile} isFirst={isFirst} />
+              <VideoCard 
+                 video={video} 
+                 isMobile={isMobile} 
+                 isFirst={isFirst} 
+                 markVideoReady={markVideoReady} // Pass the trigger explicitly down
+              />
             </div>
           ))}
         </AnimatePresence>

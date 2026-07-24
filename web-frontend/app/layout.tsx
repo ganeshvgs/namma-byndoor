@@ -1,77 +1,43 @@
-//path web-frontend/app/layout.tsx
-"use client";
-
 import "./globals.css";
-import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import Loader from "./components/Loader";
+import { LoaderProvider } from "./providers/LoaderProvider";
+
+// This script executes synchronously before React hydrates, guaranteeing zero FOUC.
+const noFoucScript = `
+  (function() {
+    try {
+      var visited = sessionStorage.getItem('namma-byndoor-loaded');
+      if (!visited) {
+        sessionStorage.setItem('namma-byndoor-loaded', '1');
+        // Only trigger loader on the homepage
+        if (window.location.pathname === '/') {
+          document.documentElement.classList.add('is-loading');
+        }
+      }
+    } catch (e) {}
+  })();
+`;
+
+export const metadata = {
+  title: "Namma Byndoor",
+  description: "Discover the beauty of Byndoor",
+};
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
-  const isHome = pathname === "/";
-
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    // No loader on other pages
-    if (!isHome) {
-      setLoading(false);
-      return;
-    }
-
-    // Show loader only once per browser session
-    const hasVisited = sessionStorage.getItem("namma-byndoor-loader");
-
-    if (hasVisited) {
-      setLoading(false);
-      return;
-    }
-
-    sessionStorage.setItem("namma-byndoor-loader", "true");
-    setLoading(true);
-
-    // Main loader duration
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 4000);
-
-    // Failsafe (prevents permanent loader)
-    const failsafe = setTimeout(() => {
-      setLoading(false);
-    }, 6000);
-
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(failsafe);
-    };
-  }, [pathname, isHome]);
-
-  // Prevent scrolling while loader is visible
-  useEffect(() => {
-    if (loading) {
-      document.documentElement.style.overflow = "hidden";
-      document.body.style.overflow = "hidden";
-    } else {
-      document.documentElement.style.overflow = "";
-      document.body.style.overflow = "";
-    }
-
-    return () => {
-      document.documentElement.style.overflow = "";
-      document.body.style.overflow = "";
-    };
-  }, [loading]);
-
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: noFoucScript }} />
+      </head>
       <body suppressHydrationWarning>
-        {children}
-
-        {loading && isHome && <Loader />}
+        <LoaderProvider>
+          <div id="main-content">
+            {children}
+          </div>
+        </LoaderProvider>
       </body>
     </html>
   );
