@@ -1,3 +1,5 @@
+//path : app/layout.tsx
+
 import "./globals.css";
 import { LoaderProvider } from "./providers/LoaderProvider";
 

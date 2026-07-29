@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { AnimatePresence } from "framer-motion";
 import Loader from "../components/Loader";
 
@@ -20,7 +20,7 @@ export function LoaderProvider({ children }: { children: React.ReactNode }) {
   const [videoReady, setVideoReady] = useState(false);
 
   useEffect(() => {
-    // Read the HTML class set by our synchronous script
+    // Read the HTML class set by our synchronous script in layout.tsx
     if (document.documentElement.classList.contains("is-loading")) {
       setIsLoaderActive(true);
     }
@@ -29,12 +29,13 @@ export function LoaderProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isLoaderActive) return;
 
-    // Requirement 2: Minimum 4 seconds duration
+    // OPTIMIZATION: The Loader map draws for 2.5s, fills for 0.8s (Total 3.3s). 
+    // Reduced from forced 4000ms to 3400ms to dismiss the millisecond the brand drawing finishes.
     const timer = setTimeout(() => {
       setTimerDone(true);
-    }, 4000);
+    }, 3400);
 
-    // Failsafe: Prevent permanent loader if video API fails entirely (max wait 10s)
+    // Failsafe: Prevent permanent loader if network dies or DB is empty
     const failsafe = setTimeout(() => {
       setTimerDone(true);
       setVideoReady(true);
@@ -47,15 +48,21 @@ export function LoaderProvider({ children }: { children: React.ReactNode }) {
   }, [isLoaderActive]);
 
   useEffect(() => {
-    // Both conditions must be met to remove the loader
+    // Both branding minimum AND first Hero video readiness must be met
     if (timerDone && videoReady) {
       setIsLoaderActive(false);
     }
   }, [timerDone, videoReady]);
 
-  const markVideoReady = () => setVideoReady(true);
+  // Wrapped in useCallback to prevent continuous re-rendering of children using context
+  const markVideoReady = useCallback(() => {
+    setVideoReady((prev) => {
+      if (prev) return prev; // Idempotent check
+      return true;
+    });
+  }, []);
 
-  // When framer-motion finishes animating the loader away, reveal the site
+  // When framer-motion finishes fading the loader away, reveal scrollbar
   const handleLoaderExitComplete = () => {
     document.documentElement.classList.remove("is-loading");
   };
