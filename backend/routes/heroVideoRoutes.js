@@ -10,11 +10,22 @@ import {
 } from "../controllers/heroVideoController.js";
 
 const router = express.Router();
+const publicCache = (
+  req,
+  res,
+  next
+) => {
+  res.set(
+    "Cache-Control",
+    "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
+  );
 
+  next();
+};
 /*
     GET Hero Videos
 */
-router.get("/", getHeroVideos);
+router.get("/", publicCache, getHeroVideos);
 
 /*
     Create Hero Video

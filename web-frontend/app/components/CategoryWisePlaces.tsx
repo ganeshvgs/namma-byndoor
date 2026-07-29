@@ -415,10 +415,16 @@ export default function CategoryWisePlaces() {
         setLoading(true);
         setError(false);
 
-        const [catRes, placesRes] = await Promise.all([
-          api.get<CategoriesResponse>("/api/categories"),
-          api.get<PlacesResponse>("/api/places"),
-        ]);
+       const [catRes, placesRes] =
+  await Promise.all([
+    api.get<CategoriesResponse>(
+      "/api/categories?status=active&sort=priority&limit=100"
+    ),
+
+    api.get<PlacesResponse>(
+      "/api/places?status=active&sort=priority&limit=100"
+    ),
+  ]);
 
         if (!isMounted) return;
 

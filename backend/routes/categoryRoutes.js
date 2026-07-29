@@ -1,4 +1,5 @@
 import express from "express";
+
 import authMiddleware from "../middlewares/authMiddleware.js";
 
 import {
@@ -12,14 +13,61 @@ import {
 
 const router = express.Router();
 
-/* Public */
-router.get("/", getCategories);
-router.get("/:id", getCategory);
+/* =========================================================
+   PUBLIC CACHE
+========================================================= */
 
-/* Admin Only */
-router.post("/", authMiddleware, createCategory);
-router.put("/:id", authMiddleware, updateCategory);
-router.delete("/:id", authMiddleware, deleteCategory);
+const publicCache = (
+  req,
+  res,
+  next
+) => {
+  res.set(
+    "Cache-Control",
+    "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
+  );
+
+  next();
+};
+
+/* =========================================================
+   PUBLIC
+========================================================= */
+
+router.get(
+  "/",
+  publicCache,
+  getCategories
+);
+
+router.get(
+  "/:id",
+  publicCache,
+  getCategory
+);
+
+/* =========================================================
+   ADMIN
+========================================================= */
+
+router.post(
+  "/",
+  authMiddleware,
+  createCategory
+);
+
+router.put(
+  "/:id",
+  authMiddleware,
+  updateCategory
+);
+
+router.delete(
+  "/:id",
+  authMiddleware,
+  deleteCategory
+);
+
 router.patch(
   "/:id/status",
   authMiddleware,

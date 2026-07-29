@@ -280,7 +280,10 @@ export default function FeaturedPlaces() {
         setLoading(true);
         setError(false);
 
-        const response = await api.get<PlacesResponse>("/api/places");
+       const response =
+  await api.get<PlacesResponse>(
+    "/api/places?status=active&featured=true&sort=priority&limit=6"
+  );
 
         if (!isMounted) return;
 

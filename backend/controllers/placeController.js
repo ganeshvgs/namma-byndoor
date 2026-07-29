@@ -1,8 +1,108 @@
 // controllers/placeController.js
+
+/* =========================================================================
+   WHAT CHANGED: 
+   - Introduced `validateSections`, `normalizeContentSections`, `sortSections`, 
+     `generateLegacySection`, and `generateStoryFromSections` helpers.
+   - Refactored `GET` requests to use `.lean()` for performance and appended
+     dynamic backwards-compatibility logic in `formatPlaceResponse`.
+   - Updated `POST` and `PUT` to handle `contentSections` natively, syncing
+     plain-text derivations to the `story` field automatically.
+     
+   WHY IT CHANGED: 
+   - To centralize the CMS logic and ensure duplicate populated IDs/sections 
+     never crash the database, while guaranteeing the text fallback system 
+     operates seamlessly behind the scenes.
+     
+   BACKWARD COMPATIBILITY: 
+   - If an old document is queried, the response dynamically injects a temporary
+     `contentSections` array containing the `story` so existing frontend editors 
+     can ingest it gracefully. No database migration scripts are needed.
+========================================================================= */
+
 import mongoose from "mongoose";
+import crypto from "crypto";
 import Place from "../models/Place.js";
 import Category from "../models/Category.js";
 import cloudinary from "../config/cloudinary.js";
+
+/* ===========================================
+   Helper Functions (CMS Formatting)
+=========================================== */
+
+const validateSections = (sections) => {
+  if (!Array.isArray(sections)) return;
+  if (sections.length > 50) throw new Error("Maximum 50 content sections allowed.");
+  
+  const ids = new Set();
+  sections.forEach((sec) => {
+    if (sec.title && sec.title.length > 100) throw new Error("Section title cannot exceed 100 characters.");
+    if (sec.content && sec.content.length > 5000) throw new Error("Section content cannot exceed 5000 characters.");
+    if (sec.displayOrder === undefined || sec.displayOrder === null) throw new Error("Display order is required for all sections.");
+    
+    // Check for explicit ID duplicates
+    if (sec.id) {
+      if (ids.has(sec.id)) throw new Error(`Duplicate section ID found: ${sec.id}`);
+      ids.add(sec.id);
+    }
+  });
+};
+
+const normalizeContentSections = (sections) => {
+  if (!Array.isArray(sections)) return [];
+  return sections.map((sec, index) => ({
+    ...sec,
+    id: sec.id || crypto.randomUUID(),
+    displayOrder: sec.displayOrder !== undefined ? sec.displayOrder : index + 1,
+    visible: sec.visible !== undefined ? sec.visible : true,
+  }));
+};
+
+const sortSections = (sections) => {
+  if (!Array.isArray(sections)) return [];
+  return [...sections].sort((a, b) => a.displayOrder - b.displayOrder);
+};
+
+const generateLegacySection = (story) => {
+  if (!story) return [];
+  return [
+    {
+      id: `legacy-${crypto.randomUUID().slice(0, 8)}`,
+      sectionType: "overview",
+      title: "Overview",
+      content: story,
+      displayOrder: 1,
+      visible: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  ];
+};
+
+const generateStoryFromSections = (sections) => {
+  if (!Array.isArray(sections)) return "";
+  return sortSections(sections)
+    .filter(sec => sec.visible && sec.content)
+    .map(sec => sec.content)
+    .join("\n\n");
+};
+
+const formatPlaceResponse = (placeDoc) => {
+  if (!placeDoc) return null;
+  // Account for both .lean() objects and standard Mongoose documents
+  const place = placeDoc.toObject ? placeDoc.toObject() : placeDoc;
+
+  // Backward compatibility: If no sections exist but story does, fake the sections
+  if (place.contentSections && place.contentSections.length > 0) {
+    place.contentSections = sortSections(place.contentSections);
+  } else if (place.story) {
+    place.contentSections = generateLegacySection(place.story);
+  } else {
+    place.contentSections = [];
+  }
+
+  return place;
+};
 
 /* ===========================================
    Create Place
@@ -15,6 +115,7 @@ export const createPlace = async (req, res) => {
       slug,
       shortDescription,
       story,
+      contentSections,
       coverImage,
       coverImagePublicId,
       galleryImages,
@@ -36,6 +137,19 @@ export const createPlace = async (req, res) => {
         success: false,
         message: "Title, Slug, Category, and Short Description are required.",
       });
+    }
+
+    // Process CMS Sections
+    let processedSections = [];
+    if (contentSections !== undefined) {
+      validateSections(contentSections);
+      processedSections = normalizeContentSections(contentSections);
+    }
+
+    // Determine finalized fallback story
+    let finalizedStory = story;
+    if (!finalizedStory && processedSections.length > 0) {
+      finalizedStory = generateStoryFromSections(processedSections);
     }
 
     let categoryDoc;
@@ -77,7 +191,8 @@ export const createPlace = async (req, res) => {
       title,
       slug,
       shortDescription,
-      story,
+      story: finalizedStory || "",
+      contentSections: processedSections,
       coverImage,
       coverImagePublicId,
       galleryImages: galleryImages || [],
@@ -97,7 +212,7 @@ export const createPlace = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: "Place created successfully.",
-      place,
+      place: formatPlaceResponse(place),
     });
   } catch (err) {
     console.error("createPlace Error:", err);
@@ -131,6 +246,8 @@ export const getPlaces = async (req, res) => {
         { shortDescription: { $regex: search, $options: "i" } },
         { story: { $regex: search, $options: "i" } },
         { tags: { $regex: search, $options: "i" } },
+        { "contentSections.title": { $regex: search, $options: "i" } },
+        { "contentSections.content": { $regex: search, $options: "i" } },
       ];
     }
 
@@ -163,21 +280,25 @@ export const getPlaces = async (req, res) => {
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    const [total, places] = await Promise.all([
+    // Using .lean() directly ensures high query performance without hydration overhead
+    const [total, rawPlaces] = await Promise.all([
       Place.countDocuments(query),
       Place.find(query)
         .populate("category", "name slug")
         .sort(sortOption)
         .skip(skip)
-        .limit(Number(limit)),
+        .limit(Number(limit))
+        .lean(),
     ]);
+
+    const formattedPlaces = rawPlaces.map(formatPlaceResponse);
 
     return res.status(200).json({
       success: true,
       total,
       page: Number(page),
       pages: Math.ceil(total / Number(limit)) || 1,
-      places,
+      places: formattedPlaces,
     });
   } catch (err) {
     console.error("getPlaces Error:", err);
@@ -191,30 +312,24 @@ export const getPlaces = async (req, res) => {
 /* ===========================================
    Get Single Place
 =========================================== */
-/* ===========================================
-   Get Single Place by MongoDB ID or Slug
-=========================================== */
 export const getPlace = async (req, res) => {
   try {
     const { id } = req.params;
 
     let place;
 
-    // Admin requests may use MongoDB ID
+    // Using .lean() to grab clean data
     if (mongoose.Types.ObjectId.isValid(id)) {
-      place = await Place.findById(id).populate(
-        "category",
-        "name slug description icon coverImage"
-      );
+      place = await Place.findById(id)
+        .populate("category", "name slug description icon coverImage")
+        .lean();
     } else {
-      // Public place pages use the readable slug
       place = await Place.findOne({
         slug: id.toLowerCase().trim(),
         status: "active",
-      }).populate(
-        "category",
-        "name slug description icon coverImage"
-      );
+      })
+        .populate("category", "name slug description icon coverImage")
+        .lean();
     }
 
     if (!place) {
@@ -226,7 +341,7 @@ export const getPlace = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      place,
+      place: formatPlaceResponse(place),
     });
   } catch (err) {
     console.error("getPlace Error:", err);
@@ -259,6 +374,7 @@ export const updatePlace = async (req, res) => {
       slug,
       shortDescription,
       story,
+      contentSections,
       coverImage,
       coverImagePublicId,
       galleryImages,
@@ -322,6 +438,19 @@ export const updatePlace = async (req, res) => {
       place.slug = slug;
     }
 
+    // Handle incoming structured CMS data
+    if (contentSections !== undefined) {
+      validateSections(contentSections);
+      place.contentSections = normalizeContentSections(contentSections);
+    }
+
+    // Determine updated story. Explicitly provided story supersedes generation.
+    if (story !== undefined) {
+      place.story = story;
+    } else if (contentSections !== undefined) {
+      place.story = generateStoryFromSections(place.contentSections);
+    }
+
     if (
       coverImagePublicId &&
       place.coverImagePublicId &&
@@ -335,7 +464,6 @@ export const updatePlace = async (req, res) => {
     }
 
     if (shortDescription !== undefined) place.shortDescription = shortDescription;
-    if (story !== undefined) place.story = story;
     if (coverImage !== undefined) place.coverImage = coverImage;
     if (coverImagePublicId !== undefined) place.coverImagePublicId = coverImagePublicId;
     if (galleryImages !== undefined) place.galleryImages = galleryImages;
@@ -353,15 +481,14 @@ export const updatePlace = async (req, res) => {
 
     await place.save({ runValidators: true });
 
-    const updatedPlace = await Place.findById(place._id).populate(
-      "category",
-      "name slug"
-    );
+    const updatedPlace = await Place.findById(place._id)
+      .populate("category", "name slug")
+      .lean();
 
     return res.status(200).json({
       success: true,
       message: "Place updated successfully.",
-      place: updatedPlace,
+      place: formatPlaceResponse(updatedPlace),
     });
   } catch (err) {
     console.error("updatePlace Error:", err);
@@ -436,7 +563,7 @@ export const toggleStatus = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Status updated successfully.",
-      place,
+      place: formatPlaceResponse(place),
     });
   } catch (err) {
     console.error("toggleStatus Error:", err);
@@ -467,7 +594,7 @@ export const toggleFeatured = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Featured updated successfully.",
-      place,
+      place: formatPlaceResponse(place),
     });
   } catch (err) {
     console.error("toggleFeatured Error:", err);

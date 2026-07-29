@@ -45,6 +45,8 @@ export default function PlaceCard({ place, onEdit, onDelete, onPreview, onRefres
     }
   }
 
+  const sectionsCount = place.contentSections?.length || 0;
+
   return (
     <div className="group relative rounded-3xl border border-indigo-500/15 bg-slate-900/40 backdrop-blur-md shadow-xl overflow-hidden flex flex-col transition-all duration-300 hover:border-indigo-500/30 hover:shadow-indigo-500/10">
       {/* Cover Image & Badges */}
@@ -56,13 +58,22 @@ export default function PlaceCard({ place, onEdit, onDelete, onPreview, onRefres
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-80" />
 
-        <div className="absolute top-3 left-3 flex items-center gap-2">
-          <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 backdrop-blur-md">
-            {place.category?.name || "General"}
-          </span>
-          <span className="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-slate-900/80 text-slate-300 border border-white/10 backdrop-blur-md">
-            P{place.priority}
-          </span>
+        <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5">
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 backdrop-blur-md">
+              {place.category?.name || "General"}
+            </span>
+            <span className="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-slate-900/80 text-slate-300 border border-white/10 backdrop-blur-md">
+              P{place.priority}
+            </span>
+          </div>
+          {/* New Non-Intrusive CMS Badge */}
+          {sectionsCount > 0 && (
+             <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/10 text-slate-300 border border-white/20 backdrop-blur-md flex items-center gap-1">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+               CMS {sectionsCount} Sections
+             </span>
+          )}
         </div>
 
         <div className="absolute top-3 right-3 flex items-center gap-1.5">

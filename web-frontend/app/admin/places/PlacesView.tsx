@@ -33,19 +33,27 @@ export default function PlacesView() {
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Filter & View States
+  // Debounced Search Logic
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<PlaceStatusFilter>("all");
   const [sortField, setSortField] = useState<PlaceSortField>("priority-asc");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Modals
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Place | null>(null);
   const [previewing, setPreviewing] = useState<Place | null>(null);
   const [deleting, setDeleting] = useState<Place | null>(null);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 350);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -68,7 +76,7 @@ export default function PlacesView() {
         limit: PAGE_SIZE.toString(),
       });
 
-      if (searchQuery.trim()) queryParams.append("search", searchQuery.trim());
+      if (debouncedSearch.trim()) queryParams.append("search", debouncedSearch.trim());
       if (categoryFilter !== "all") queryParams.append("category", categoryFilter);
       
       if (statusFilter === "active" || statusFilter === "inactive") {
@@ -110,7 +118,7 @@ export default function PlacesView() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchQuery, categoryFilter, statusFilter, sortField]);
+  }, [currentPage, debouncedSearch, categoryFilter, statusFilter, sortField]);
 
   useEffect(() => {
     fetchCategories();
@@ -122,13 +130,12 @@ export default function PlacesView() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, categoryFilter, statusFilter, sortField]);
+  }, [debouncedSearch, categoryFilter, statusFilter, sortField]);
 
-  const isFilterActive = Boolean(searchQuery.trim() || categoryFilter !== "all" || statusFilter !== "all");
+  const isFilterActive = Boolean(debouncedSearch.trim() || categoryFilter !== "all" || statusFilter !== "all");
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black leading-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-indigo-400">
@@ -140,14 +147,13 @@ export default function PlacesView() {
         </div>
         <button
           onClick={() => { setEditing(null); setModalOpen(true); }}
-          className="px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg shadow-indigo-500/30 flex items-center gap-2 self-start sm:self-auto"
+          className="px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg shadow-indigo-500/30 flex items-center gap-2 self-start sm:self-auto hover:scale-105 transition-transform"
         >
           <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>
           Add Destination
         </button>
       </div>
 
-      {/* Control Bar */}
       <PlaceControls
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -163,7 +169,6 @@ export default function PlacesView() {
         totalResults={totalItems}
       />
 
-      {/* Main Content Area */}
       <AnimatePresence mode="popLayout">
         {loading ? (
           <PlaceSkeleton viewMode={viewMode} count={PAGE_SIZE} />
@@ -199,12 +204,10 @@ export default function PlacesView() {
         )}
       </AnimatePresence>
 
-      {/* Pagination */}
       {!loading && places.length > 0 && (
         <PlacePagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} pageSize={PAGE_SIZE} onPageChange={setCurrentPage} />
       )}
 
-      {/* Modals */}
       <PlaceModal open={modalOpen} onClose={() => setModalOpen(false)} editing={editing} onSaved={fetchPlaces} availableCategories={categories} />
       <PlacePreviewModal place={previewing} onClose={() => setPreviewing(null)} />
       <PlaceDeleteDialog place={deleting} onClose={() => setDeleting(null)} onDeleted={fetchPlaces} />

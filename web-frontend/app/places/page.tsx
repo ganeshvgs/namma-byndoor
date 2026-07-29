@@ -128,10 +128,16 @@ export default function PlacesPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [catRes, placesRes] = await Promise.all([
-          api.get<any>("/api/categories"),
-          api.get<any>("/api/places"),
-        ]);
+    const [catRes, placesRes] =
+  await Promise.all([
+    api.get<any>(
+      "/api/categories?status=active&sort=priority&limit=100"
+    ),
+
+    api.get<any>(
+      "/api/places?status=active&sort=priority&limit=100"
+    ),
+  ]);
 
         const rawCats = catRes.data || catRes.categories || [];
         const rawPlaces = placesRes.data || placesRes.places || [];
@@ -162,7 +168,7 @@ export default function PlacesPage() {
 
   // Filter & Sort Logic
   const filteredPlaces = useMemo(() => {
-    let result = places;
+  let result = [...places];
 
     // 1. Category Filter
     if (activeCategory !== "all") {
