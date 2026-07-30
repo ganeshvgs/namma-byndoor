@@ -15,28 +15,10 @@ import {
 const router = express.Router();
 
 /* =========================================================
-   PUBLIC CACHE
+   CACHE MIDDLEWARE
 ========================================================= */
 
-/*
-  Browser:
-      cache for 60 seconds
-
-  CDN / Vercel:
-      cache for 5 minutes
-
-  stale-while-revalidate:
-      stale response may be served while a fresh copy is
-      generated in the background.
-
-  This only applies to PUBLIC GET endpoints.
-*/
-
-const publicCache = (
-  req,
-  res,
-  next
-) => {
+const publicCache = (req, res, next) => {
   res.set(
     "Cache-Control",
     "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
@@ -44,6 +26,37 @@ const publicCache = (
 
   next();
 };
+
+const noCache = (req, res, next) => {
+  res.set(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, proxy-revalidate"
+  );
+
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+
+  next();
+};
+
+/* =========================================================
+   ADMIN READ ROUTES
+========================================================= */
+
+/*
+  IMPORTANT:
+  Admin must never use cached place data.
+
+  GET:
+  /api/places/admin/all
+*/
+
+router.get(
+  "/admin/all",
+  authMiddleware,
+  noCache,
+  getPlaces
+);
 
 /* =========================================================
    PUBLIC ROUTES
@@ -68,18 +81,21 @@ router.get(
 router.post(
   "/",
   authMiddleware,
+  noCache,
   createPlace
 );
 
 router.put(
   "/:id",
   authMiddleware,
+  noCache,
   updatePlace
 );
 
 router.delete(
   "/:id",
   authMiddleware,
+  noCache,
   deletePlace
 );
 
@@ -90,12 +106,14 @@ router.delete(
 router.patch(
   "/:id/status",
   authMiddleware,
+  noCache,
   toggleStatus
 );
 
 router.patch(
   "/:id/featured",
   authMiddleware,
+  noCache,
   toggleFeatured
 );
 

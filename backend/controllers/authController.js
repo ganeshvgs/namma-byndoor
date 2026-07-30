@@ -19,13 +19,59 @@ const generateToken = (id) => {
  */
 export const loginAdmin = async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, turnstileToken } = req.body;
 
-    // Validate input
+    // Validate request fields
     if (!username || !password) {
       return res.status(400).json({
         success: false,
         message: "Username and password are required.",
+      });
+    }
+
+    if (!turnstileToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Security verification is required.",
+      });
+    }
+
+    // Validate Turnstile Token
+    const turnstileSecret = process.env.TURNSTILE_SECRET;
+    
+    if (!turnstileSecret) {
+      console.error("TURNSTILE_SECRET is not configured on the server.");
+      return res.status(500).json({
+        success: false,
+        message: "Internal Server Error.",
+      });
+    }
+
+    const formData = new URLSearchParams();
+    formData.append("secret", turnstileSecret);
+    formData.append("response", turnstileToken);
+    
+    // Express 'trust proxy' is on, req.ip will reflect the real client IP behind Vercel/proxies
+    if (req.ip) {
+      formData.append("remoteip", req.ip);
+    }
+
+    // Call Cloudflare Siteverify
+    const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body: formData,
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    });
+
+    const verifyData = await verifyRes.json();
+
+    // Require result.success === true (Fail closed)
+    if (!verifyData.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Security verification failed. Please try again.",
       });
     }
 

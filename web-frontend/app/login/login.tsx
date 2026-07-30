@@ -1,7 +1,13 @@
-//path : web-frontend/app/login/login.tsx
 "use client"
 import { useState, useEffect, useRef } from "react";
 import { api, ApiError } from "../lib/api";
+
+declare global {
+  interface Window {
+    turnstile: any;
+  }
+}
+
 const MAP_PATH =
   "M 43 2 L 52 14 L 62 25 L 85 18 L 105 28 L 128 32 L 138 45 L 148 55 L 165 52 L 182 72 L 188 95 L 175 105 L 185 118 L 168 120 L 155 108 L 138 102 L 125 112 L 105 102 L 85 115 L 70 110 L 58 100 L 52 122 L 45 125 L 40 105 L 35 75 L 28 50 L 22 28 L 32 18 Z";
 
@@ -12,7 +18,7 @@ function usePrefersReducedMotion() {
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReduced(mq.matches);
-    const handler = (e) => setReduced(e.matches);
+    const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, []);
@@ -69,6 +75,70 @@ function CheckIcon({ size = 22 }) {
   );
 }
 
+function TurnstileWidget({ onVerify, onError, onExpire }: { onVerify: (token: string) => void, onError: () => void, onExpire: () => void }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let widgetId: string | null = null;
+    const scriptId = "cf-turnstile-script";
+
+    const renderWidget = () => {
+      if (window.turnstile && containerRef.current && !containerRef.current.hasChildNodes()) {
+        widgetId = window.turnstile.render(containerRef.current, {
+          sitekey: "0x4AAAAAAEBcivo9jDT7Of9o",
+          callback: onVerify,
+          "error-callback": onError,
+          "expired-callback": onExpire,
+          theme: "light",
+        });
+      }
+    };
+
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      script.async = true;
+      script.defer = true;
+      script.onload = renderWidget;
+      document.head.appendChild(script);
+    } else {
+      // Script exists, check if loaded
+      if (window.turnstile) {
+        renderWidget();
+      } else {
+        const interval = setInterval(() => {
+          if (window.turnstile) {
+            clearInterval(interval);
+            renderWidget();
+          }
+        }, 100);
+      }
+    }
+
+    return () => {
+      if (widgetId !== null && window.turnstile) {
+        window.turnstile.remove(widgetId);
+      }
+    };
+  }, [onVerify, onError, onExpire]);
+
+  return (
+    <div
+      style={{
+        transform: "scale(0.85)",
+        transformOrigin: "center center",
+        width: 300,
+        minHeight: 65,
+        display: "flex",
+        justifyContent: "center",
+      }}
+      ref={containerRef}
+      data-action="turnstile-spin-v2"
+    />
+  );
+}
+
 export default function NammaByndoorLogin() {
   const reduced = usePrefersReducedMotion();
   const isMobile = useIsMobile();
@@ -77,7 +147,9 @@ export default function NammaByndoorLogin() {
   const [phase, setPhase] = useState("idle");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  
   const [pathLength, setPathLength] = useState(0);
   const [drawProgress, setDrawProgress] = useState(0);
   const [fillOpacity, setFillOpacity] = useState(0);
@@ -89,8 +161,9 @@ export default function NammaByndoorLogin() {
   const [successScale, setSuccessScale] = useState(1);
   const [successOpacity, setSuccessOpacity] = useState(1);
   const [btnState, setBtnState] = useState("idle"); // idle | loading | success
-  const pathRef = useRef(null);
-  const usernameRef = useRef(null);
+  
+  const pathRef = useRef<SVGPathElement>(null);
+  const usernameRef = useRef<HTMLInputElement>(null);
 
   // Measure path length
   useEffect(() => {
@@ -115,7 +188,7 @@ export default function NammaByndoorLogin() {
       return;
     }
 
-    let raf;
+    let raf: number;
     const timeline = [
       { delay: 80, fn: () => setPageOpacity(1) },
       { delay: 300, fn: () => setMapScale(1) },
@@ -126,7 +199,7 @@ export default function NammaByndoorLogin() {
     function animateDraw() {
       const dur = 1200;
       const start = performance.now();
-      function tick(now) {
+      function tick(now: number) {
         const t = Math.min((now - start) / dur, 1);
         const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
         setDrawProgress(ease);
@@ -144,7 +217,7 @@ export default function NammaByndoorLogin() {
     function animateFill() {
       const dur = 700;
       const start = performance.now();
-      function tick(now) {
+      function tick(now: number) {
         const t = Math.min((now - start) / dur, 1);
         setFillOpacity(t);
         setGlowOpacity(t * 0.65);
@@ -160,7 +233,7 @@ export default function NammaByndoorLogin() {
     function animateForm() {
       const dur = 600;
       const start = performance.now();
-      function tick(now) {
+      function tick(now: number) {
         const t = Math.min((now - start) / dur, 1);
         const ease = 1 - Math.pow(1 - t, 3);
         setFormOpacity(ease);
@@ -182,11 +255,11 @@ export default function NammaByndoorLogin() {
   // Success screen animation
   useEffect(() => {
     if (btnState !== "success") return;
-    let raf;
+    let raf: number;
     setTimeout(() => {
       const dur = 1000;
       const start = performance.now();
-      function tick(now) {
+      function tick(now: number) {
         const t = Math.min((now - start) / dur, 1);
         const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
         setGlowOpacity(0.65 + ease * 0.35);
@@ -199,45 +272,53 @@ export default function NammaByndoorLogin() {
     return () => cancelAnimationFrame(raf);
   }, [btnState]);
 
-async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
-  e.preventDefault();
+  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
 
-  if (!username.trim() || !password.trim()) {
-    setErrorMsg("Please enter username and password.");
-    return;
-  }
+    if (!username.trim() || !password.trim() || !turnstileToken) {
+      setErrorMsg("Please complete all fields and verification.");
+      return;
+    }
 
-  setErrorMsg("");
-  setBtnState("loading");
+    setErrorMsg("");
+    setBtnState("loading");
 
-  try {
-    const data = await api.post<{
-      token: string;
-      admin: unknown;
-    }>("/api/auth/login", {
-      username,
-      password,
-    });
+    try {
+      const data = await api.post<{
+        token: string;
+        admin: unknown;
+      }>("/api/auth/login", {
+        username,
+        password,
+        turnstileToken,
+      });
 
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("admin", JSON.stringify(data.admin));
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("admin", JSON.stringify(data.admin));
 
-    setBtnState("success");
+      setBtnState("success");
 
-    setTimeout(() => {
-      window.location.replace("/admin");
-    }, 1200);
+      setTimeout(() => {
+        window.location.replace("/admin");
+      }, 1200);
 
-  } catch (err) {
-    setBtnState("idle");
+    } catch (err) {
+      setBtnState("idle");
+      
+      // Reset Turnstile on failure for a fresh single-use token
+      if (window.turnstile) {
+        window.turnstile.reset();
+      }
+      setTurnstileToken("");
 
-    if (err instanceof ApiError) {
-      setErrorMsg(err.message);
-    } else {
-      setErrorMsg("Cannot connect to server.");
+      if (err instanceof ApiError) {
+        setErrorMsg(err.message);
+      } else {
+        setErrorMsg("Cannot connect to server.");
+      }
     }
   }
-}
+
   // Stroke dash params
   const strokeDasharray = pathLength > 0 ? `${pathLength * drawProgress} ${pathLength * (1 - drawProgress)}` : "0 9999";
 
@@ -322,6 +403,8 @@ async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
             setUsername={setUsername}
             password={password}
             setPassword={setPassword}
+            turnstileToken={turnstileToken}
+            setTurnstileToken={setTurnstileToken}
             errorMsg={errorMsg}
             btnState={btnState}
             handleLogin={handleLogin}
@@ -367,7 +450,7 @@ async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
                 transform: `translate(-50%, calc(-50% + ${formY}px))`,
                 opacity: formOpacity,
                 transition: reduced ? "none" : "none",
-                width: 220,
+                width: 260,
                 display: "flex",
                 flexDirection: "column",
                 gap: "12px",
@@ -381,6 +464,8 @@ async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
                 setUsername={setUsername}
                 password={password}
                 setPassword={setPassword}
+                turnstileToken={turnstileToken}
+                setTurnstileToken={setTurnstileToken}
                 errorMsg={errorMsg}
                 btnState={btnState}
                 handleLogin={handleLogin}
@@ -399,6 +484,7 @@ async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
         input:-webkit-autofill { -webkit-box-shadow: 0 0 0 40px rgba(255,255,255,0.85) inset !important; }
         .nb-input:focus-visible { outline: 2px solid #38BDF8; outline-offset: 0; box-shadow: 0 0 0 4px rgba(56,189,248,0.22); }
         .nb-btn { cursor: pointer; border: none; }
+        .nb-btn:disabled { opacity: 0.7; cursor: not-allowed; }
         .nb-btn:focus-visible { outline: 2px solid #38BDF8; outline-offset: 3px; }
         .nb-btn:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(2,132,199,0.35); }
         .nb-btn:active:not(:disabled) { transform: scale(0.98) translateY(0); }
@@ -463,7 +549,7 @@ function Tagline() {
   );
 }
 
-function MapSVG({ pathRef, pathLength, strokeDasharray, fillOpacity, glowOpacity, drawProgress, reduced }) {
+function MapSVG({ pathRef, pathLength, strokeDasharray, fillOpacity, glowOpacity, drawProgress, reduced }: any) {
   return (
     <svg
       viewBox={VIEWBOX}
@@ -588,7 +674,7 @@ function MapSVG({ pathRef, pathLength, strokeDasharray, fillOpacity, glowOpacity
   );
 }
 
-function LoginFields({ username, setUsername, password, setPassword, errorMsg, btnState, handleLogin, usernameRef }) {
+function LoginFields({ username, setUsername, password, setPassword, turnstileToken, setTurnstileToken, errorMsg, btnState, handleLogin, usernameRef }: any) {
   const inputStyle = {
     width: "100%",
     height: 48,
@@ -604,8 +690,10 @@ function LoginFields({ username, setUsername, password, setPassword, errorMsg, b
     letterSpacing: "0.01em",
     fontFamily: "inherit",
     transition: "border-color 0.2s, box-shadow 0.2s",
-    boxSizing: "border-box",
+    boxSizing: "border-box" as const,
   };
+
+  const isSubmitDisabled = !username.trim() || !password.trim() || !turnstileToken || btnState === "loading" || btnState === "success";
 
   return (
     <form onSubmit={handleLogin} noValidate aria-label="Sign in to Namma Byndoor">
@@ -651,6 +739,15 @@ function LoginFields({ username, setUsername, password, setPassword, errorMsg, b
           />
         </div>
 
+        {/* Cloudflare Turnstile */}
+        <div style={{ display: "flex", justifyContent: "center", margin: "4px 0" }}>
+          <TurnstileWidget 
+            onVerify={(token) => setTurnstileToken(token)}
+            onError={() => setTurnstileToken("")}
+            onExpire={() => setTurnstileToken("")}
+          />
+        </div>
+
         {/* Error */}
         {errorMsg && (
           <div role="alert" style={{ fontSize: 11, color: "#DC2626", fontWeight: 500, textAlign: "center", letterSpacing: "0.01em" }}>
@@ -662,7 +759,7 @@ function LoginFields({ username, setUsername, password, setPassword, errorMsg, b
         <button
           type="submit"
           className="nb-btn"
-          disabled={btnState === "loading" || btnState === "success"}
+          disabled={isSubmitDisabled}
           aria-label={btnState === "loading" ? "Signing in…" : btnState === "success" ? "Signed in" : "Sign in"}
           style={{
             width: "100%",
@@ -696,7 +793,7 @@ function LoginFields({ username, setUsername, password, setPassword, errorMsg, b
   );
 }
 
-function MobileForm({ formOpacity, formY, username, setUsername, password, setPassword, errorMsg, btnState, handleLogin, usernameRef, reduced }) {
+function MobileForm({ formOpacity, formY, username, setUsername, password, setPassword, turnstileToken, setTurnstileToken, errorMsg, btnState, handleLogin, usernameRef, reduced }: any) {
   return (
     <div
       style={{
@@ -719,6 +816,8 @@ function MobileForm({ formOpacity, formY, username, setUsername, password, setPa
         setUsername={setUsername}
         password={password}
         setPassword={setPassword}
+        turnstileToken={turnstileToken}
+        setTurnstileToken={setTurnstileToken}
         errorMsg={errorMsg}
         btnState={btnState}
         handleLogin={handleLogin}

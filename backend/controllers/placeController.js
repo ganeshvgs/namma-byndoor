@@ -577,9 +577,33 @@ export const toggleStatus = async (req, res) => {
 /* ===========================================
    Toggle Featured
 =========================================== */
+/* ===========================================
+   Set Featured State
+=========================================== */
 export const toggleFeatured = async (req, res) => {
   try {
-    const place = await Place.findById(req.params.id);
+    const { id } = req.params;
+    const { featured } = req.body;
+
+    if (typeof featured !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        message: "featured must be true or false.",
+      });
+    }
+
+    const place = await Place.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          featured,
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).populate("category", "name slug");
 
     if (!place) {
       return res.status(404).json({
@@ -588,16 +612,19 @@ export const toggleFeatured = async (req, res) => {
       });
     }
 
-    place.featured = !place.featured;
-    await place.save({ runValidators: true });
+    // Prevent this mutation response being cached
+    res.set("Cache-Control", "no-store");
 
     return res.status(200).json({
       success: true,
-      message: "Featured updated successfully.",
+      message: featured
+        ? "Place added to Featured Places."
+        : "Place removed from Featured Places.",
       place: formatPlaceResponse(place),
     });
   } catch (err) {
     console.error("toggleFeatured Error:", err);
+
     return res.status(500).json({
       success: false,
       message: err.message,

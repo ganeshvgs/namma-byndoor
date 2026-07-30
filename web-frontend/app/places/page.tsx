@@ -1,4 +1,4 @@
-// path: app/places/page.tsx
+//path : web-frontend/app/places/page.tsx
 "use client";
 
 import React, { useState, useEffect, useMemo, memo } from "react";
@@ -10,7 +10,7 @@ import Navbar from "../components/Navbar";
 import PlacesLoading from "./loading";
 
 // ============================================================================
-// TYPES (Reused from existing interfaces)
+// TYPES
 // ============================================================================
 interface Category {
   _id: string;
@@ -56,11 +56,16 @@ const SearchIcon = () => (
 );
 
 // ============================================================================
-// UI COMPONENTS (Self-contained to protect homepage integrity)
+// UI COMPONENTS
 // ============================================================================
 const CategoryCard = memo(({ cat, isSelected, onClick, reducedMotion }: any) => (
   <motion.button
-    type="button" onClick={onClick}
+    type="button" 
+    onClick={onClick}
+    variants={reducedMotion ? undefined : {
+      hidden: { opacity: 0, y: 15 },
+      visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } }
+    }}
     whileHover={reducedMotion ? undefined : { y: -6, scale: 1.02 }}
     whileTap={reducedMotion ? undefined : { scale: 0.98 }}
     className={`group relative shrink-0 w-[145px] h-[175px] md:w-[190px] md:h-[220px] rounded-[24px] overflow-hidden text-left cursor-pointer transition-all duration-300 snap-start select-none ${
@@ -69,7 +74,13 @@ const CategoryCard = memo(({ cat, isSelected, onClick, reducedMotion }: any) => 
     style={{ backgroundColor: TOKENS.cardBg }}
   >
     <div className="absolute inset-0 w-full h-full bg-slate-800">
-      <Image src={cat.coverImage || "/images/placeholder-category.jpg"} alt={cat.name} fill sizes="190px" className={`object-cover transition-transform duration-700 ${isSelected ? "scale-105" : "group-hover:scale-110"}`} />
+      <Image 
+        src={cat.coverImage || "/images/placeholder-category.jpg"} 
+        alt={cat.name} 
+        fill 
+        sizes="(max-width: 768px) 145px, 190px" 
+        className={`object-cover transition-transform duration-700 ${isSelected ? "scale-105" : "group-hover:scale-110"}`} 
+      />
     </div>
     <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A]/90 via-[#0F172A]/30 to-transparent pointer-events-none" />
     {isSelected && <div className="absolute inset-0 opacity-20" style={{ background: `linear-gradient(135deg, ${TOKENS.gradientStart} 0%, ${TOKENS.secondary} 100%)` }} />}
@@ -82,32 +93,48 @@ const CategoryCard = memo(({ cat, isSelected, onClick, reducedMotion }: any) => 
 CategoryCard.displayName = "CategoryCard";
 
 const CompactPlaceCard = memo(({ place, reducedMotion }: any) => (
-  <Link href={`/places/${place.slug || place._id}`} className="group block rounded-[24px]">
-    <motion.div
-      whileHover={reducedMotion ? undefined : { y: -6 }}
-      className="w-full h-full rounded-[24px] p-2.5 sm:p-3 border backdrop-blur-xl flex flex-col justify-between shadow-sm hover:shadow-lg transition-all"
-      style={{ backgroundColor: TOKENS.cardBg, borderColor: TOKENS.border }}
-    >
-      <div className="relative w-full aspect-[4/5] md:aspect-[4/3] rounded-[18px] overflow-hidden mb-3 bg-slate-100">
-        <Image src={place.coverImage} alt={place.title} fill placeholder="blur" blurDataURL={SHIMMER} sizes="25vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
-        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/40 to-transparent" />
-        {place.featured && (
-          <div className="absolute top-2.5 right-2.5 z-10">
-            <span className="px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase text-white shadow-sm border border-white/20" style={{ background: `linear-gradient(135deg, ${TOKENS.primary} 0%, ${TOKENS.secondary} 100%)` }}>★ Featured</span>
-          </div>
-        )}
-      </div>
-      <div className="px-1.5 pb-1 flex flex-col justify-between flex-grow">
-        <h4 className="text-sm md:text-base font-bold text-[#0F172A] group-hover:text-[#0284C7] transition-colors line-clamp-1">{place.title}</h4>
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200/50">
-          <div className="text-[11px] font-medium text-[#64748B] truncate">{place.bestTime || "Year Round"}</div>
-          <div className="w-7 h-7 rounded-full flex items-center justify-center text-white transition-transform group-hover:translate-x-0.5" style={{ background: `linear-gradient(135deg, ${TOKENS.gradientStart} 0%, ${TOKENS.secondary} 100%)` }}>
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+  <motion.div
+    initial={reducedMotion ? undefined : { opacity: 0, y: 15 }}
+    whileInView={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: "50px" }}
+    transition={{ duration: 0.4, ease: "easeOut" }}
+    className="group block rounded-[24px]"
+  >
+    <Link href={`/places/${place.slug || place._id}`} className="block h-full">
+      <motion.div
+        whileHover={reducedMotion ? undefined : { y: -6 }}
+        className="w-full h-full rounded-[24px] p-2.5 sm:p-3 border backdrop-blur-xl flex flex-col justify-between shadow-sm hover:shadow-lg transition-all"
+        style={{ backgroundColor: TOKENS.cardBg, borderColor: TOKENS.border }}
+      >
+        <div className="relative w-full aspect-[4/5] md:aspect-[4/3] rounded-[18px] overflow-hidden mb-3 bg-slate-100">
+          <Image 
+            src={place.coverImage} 
+            alt={place.title} 
+            fill 
+            placeholder="blur" 
+            blurDataURL={SHIMMER} 
+            sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw" 
+            className="object-cover group-hover:scale-105 transition-transform duration-500" 
+          />
+          <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/40 to-transparent" />
+          {place.featured && (
+            <div className="absolute top-2.5 right-2.5 z-10">
+              <span className="px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase text-white shadow-sm border border-white/20" style={{ background: `linear-gradient(135deg, ${TOKENS.primary} 0%, ${TOKENS.secondary} 100%)` }}>★ Featured</span>
+            </div>
+          )}
+        </div>
+        <div className="px-1.5 pb-1 flex flex-col justify-between flex-grow">
+          <h4 className="text-sm md:text-base font-bold text-[#0F172A] group-hover:text-[#0284C7] transition-colors line-clamp-1">{place.title}</h4>
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200/50">
+            <div className="text-[11px] font-medium text-[#64748B] truncate">{place.bestTime || "Year Round"}</div>
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-white transition-transform group-hover:translate-x-0.5" style={{ background: `linear-gradient(135deg, ${TOKENS.gradientStart} 0%, ${TOKENS.secondary} 100%)` }}>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+            </div>
           </div>
         </div>
-      </div>
-    </motion.div>
-  </Link>
+      </motion.div>
+    </Link>
+  </motion.div>
 ));
 CompactPlaceCard.displayName = "CompactPlaceCard";
 
@@ -123,21 +150,16 @@ export default function PlacesPage() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("priority");
+  
   const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-    const [catRes, placesRes] =
-  await Promise.all([
-    api.get<any>(
-      "/api/categories?status=active&sort=priority&limit=100"
-    ),
-
-    api.get<any>(
-      "/api/places?status=active&sort=priority&limit=100"
-    ),
-  ]);
+        const [catRes, placesRes] = await Promise.all([
+          api.get<any>("/api/categories?status=active&sort=priority&limit=100"),
+          api.get<any>("/api/places?status=active&sort=priority&limit=100"),
+        ]);
 
         const rawCats = catRes.data || catRes.categories || [];
         const rawPlaces = placesRes.data || placesRes.places || [];
@@ -145,7 +167,6 @@ export default function PlacesPage() {
         const activeCats = rawCats.filter((c: any) => c.status === "active").sort((a: any, b: any) => a.priority - b.priority);
         const activePlaces = rawPlaces.filter((p: any) => p.status === "active");
 
-        // Construct "All" category dynamically using the first featured place's image as a cover
         const allCategory: Category = {
           _id: "all",
           name: "All Destinations",
@@ -166,16 +187,13 @@ export default function PlacesPage() {
     fetchData();
   }, []);
 
-  // Filter & Sort Logic
   const filteredPlaces = useMemo(() => {
-  let result = [...places];
+    let result = [...places];
 
-    // 1. Category Filter
     if (activeCategory !== "all") {
       result = result.filter((p) => p.category?._id === activeCategory);
     }
 
-    // 2. Search Filter
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -186,16 +204,26 @@ export default function PlacesPage() {
       );
     }
 
-    // 3. Sorting
     return result.sort((a, b) => {
       if (sortBy === "a-z") return a.title.localeCompare(b.title);
       if (sortBy === "featured") return (b.featured === true ? 0 : 1) - (a.featured === true ? 0 : 1);
-      if (sortBy === "newest") return -1; // Assuming array fetched order implies recency, reverse to mimic newest
-      return (a.priority || 0) - (b.priority || 0); // Default priority
+      if (sortBy === "newest") return -1;
+      return (a.priority || 0) - (b.priority || 0);
     });
   }, [places, activeCategory, searchQuery, sortBy]);
 
   if (loading) return <PlacesLoading />;
+
+  // Animation variants scoped for cleanliness
+  const heroContainerVariants = reducedMotion ? {} : {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.15, delayChildren: 0.1 } }
+  };
+  
+  const heroItemVariants = reducedMotion ? {} : {
+    hidden: { opacity: 0, y: 15 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+  };
 
   return (
     <main className="min-h-screen flex flex-col pb-24" style={{ background: `linear-gradient(180deg, ${TOKENS.bgMain} 0%, ${TOKENS.bgSecondary} 100%)` }}>
@@ -205,23 +233,34 @@ export default function PlacesPage() {
       <section className="relative w-full h-[45vh] min-h-[380px] bg-slate-900 overflow-hidden select-none">
         <Image src={categories[0]?.coverImage || "/images/placeholder-place.jpg"} alt="Explore Byndoor" fill sizes="100vw" priority className="object-cover opacity-50" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#F8FCFF] via-transparent to-[#0F172A]/80" />
-        <div className="absolute inset-0 z-10 flex flex-col justify-center items-center px-6 text-center">
-          <span className="px-4 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-[0.25em] text-white bg-white/20 backdrop-blur-md mb-4 border border-white/30">
+        
+        <motion.div 
+          initial="hidden" 
+          animate="visible" 
+          variants={heroContainerVariants}
+          className="absolute inset-0 z-10 flex flex-col justify-center items-center px-6 text-center"
+        >
+          <motion.span variants={heroItemVariants} className="px-4 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-[0.25em] text-white bg-white/20 backdrop-blur-md mb-4 border border-white/30">
             Discover
-          </span>
-          <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight drop-shadow-xl max-w-4xl leading-tight">
+          </motion.span>
+          <motion.h1 variants={heroItemVariants} className="text-4xl md:text-6xl font-black text-white tracking-tight drop-shadow-xl max-w-4xl leading-tight">
             Explore <span className="text-[#38BDF8]">Byndoor</span>
-          </h1>
-          <p className="mt-4 text-slate-200 md:text-lg max-w-2xl font-medium drop-shadow-md">
+          </motion.h1>
+          <motion.p variants={heroItemVariants} className="mt-4 text-slate-200 md:text-lg max-w-2xl font-medium drop-shadow-md">
             Discover beautiful beaches, majestic waterfalls, ancient temples, and hidden gems.
-          </p>
-        </div>
+          </motion.p>
+        </motion.div>
       </section>
 
-      {/* Interactive Toolbar (Search, Sort, Stats) */}
-      <div className="w-full max-w-[1400px] mx-auto px-6 md:px-12 xl:px-20 -mt-8 relative z-20 mb-8">
+      {/* Interactive Toolbar */}
+      <motion.div 
+        initial={reducedMotion ? { opacity: 1 } : { opacity: 0, y: 15 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="w-full max-w-[1400px] mx-auto px-6 md:px-12 xl:px-20 -mt-8 relative z-20 mb-8"
+      >
         <div className="w-full rounded-2xl bg-white/80 backdrop-blur-xl border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          {/* Search */}
           <div className="relative w-full md:w-96 flex items-center">
             <div className="absolute left-4 z-10"><SearchIcon /></div>
             <input
@@ -237,7 +276,6 @@ export default function PlacesPage() {
             <span className="text-sm font-bold text-slate-500 whitespace-nowrap">
               <span className="text-[#0284C7]">{filteredPlaces.length}</span> Destinations
             </span>
-            {/* Sort Dropdown */}
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
@@ -251,10 +289,19 @@ export default function PlacesPage() {
             </select>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Category Slider */}
-      <div className="w-full overflow-hidden mb-10">
+      <motion.div 
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.1 }}
+        variants={reducedMotion ? {} : {
+          hidden: { opacity: 0 },
+          visible: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.1 } }
+        }}
+        className="w-full overflow-hidden mb-10"
+      >
         <div className="flex items-center gap-3.5 md:gap-5 overflow-x-auto pb-6 pt-2 snap-x snap-mandatory scrollbar-none px-6 md:px-12 xl:px-20 max-w-[1400px] mx-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
           {categories.map((cat) => (
             <CategoryCard
@@ -266,7 +313,7 @@ export default function PlacesPage() {
             />
           ))}
         </div>
-      </div>
+      </motion.div>
 
       {/* Places Grid or Empty State */}
       <div className="w-full max-w-[1400px] mx-auto px-6 md:px-12 xl:px-20 min-h-[40vh]">
@@ -274,7 +321,10 @@ export default function PlacesPage() {
           {filteredPlaces.length === 0 ? (
             <motion.div
               key="empty"
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              initial={{ opacity: 0, y: reducedMotion ? 0 : 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, transition: { duration: 0.15 } }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
               className="w-full max-w-lg mx-auto text-center py-20 px-6 rounded-3xl border border-white/50 bg-white/40 backdrop-blur-xl shadow-sm"
             >
               <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-[#0284C7]/10 flex items-center justify-center text-[#0284C7] shadow-inner">
@@ -290,8 +340,12 @@ export default function PlacesPage() {
             </motion.div>
           ) : (
             <motion.div
-              key="grid"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              // Using a composite key forces the grid to crossfade gently when filters change 
+              key={`${activeCategory}-${sortBy}-${searchQuery}`}
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0, transition: { duration: 0.15 } }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
               className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
             >
               {filteredPlaces.map((place) => (

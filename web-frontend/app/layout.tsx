@@ -1,16 +1,13 @@
-//path : app/layout.tsx
-
 import "./globals.css";
 import { LoaderProvider } from "./providers/LoaderProvider";
+import { Metadata } from "next";
 
-// This script executes synchronously before React hydrates, guaranteeing zero FOUC.
 const noFoucScript = `
   (function() {
     try {
       var visited = sessionStorage.getItem('namma-byndoor-loaded');
       if (!visited) {
         sessionStorage.setItem('namma-byndoor-loaded', '1');
-        // Only trigger loader on the homepage
         if (window.location.pathname === '/') {
           document.documentElement.classList.add('is-loading');
         }
@@ -19,9 +16,31 @@ const noFoucScript = `
   })();
 `;
 
-export const metadata = {
-  title: "Namma Byndoor",
-  description: "Discover the beauty of Byndoor",
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://nammabyndoor.vercel.app";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Byndoor, Karnataka | Places to Visit & Explore | Namma Byndoor",
+    template: "%s | Namma Byndoor", 
+  },
+  description: "Discover Byndoor (Baindur), Karnataka. Explore places to visit, including beaches, waterfalls, temples, and destinations across the Western Ghats and coastal region.",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "Byndoor, Karnataka | Places to Visit & Explore",
+    description: "Discover Byndoor (Baindur), Karnataka. Explore places to visit, including beaches, waterfalls, temples, and destinations across the Western Ghats and coastal region.",
+    url: siteUrl,
+    siteName: "Namma Byndoor",
+    locale: "en_IN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Byndoor, Karnataka | Places to Visit & Explore",
+    description: "Discover Byndoor (Baindur), Karnataka. Explore places to visit across the region.",
+  },
 };
 
 export default function RootLayout({

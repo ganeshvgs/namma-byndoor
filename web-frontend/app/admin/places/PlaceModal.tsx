@@ -1,4 +1,3 @@
-// path: web-frontend/components/admin/places/PlaceModal.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,7 +10,7 @@ interface PlaceModalProps {
   open: boolean;
   onClose: () => void;
   editing: Place | null;
-  onSaved: () => void;
+  onSaved: () => Promise<void> | void;
   availableCategories: { _id: string; name: string }[];
 }
 
@@ -118,7 +117,8 @@ export default function PlaceModal({ open, onClose, editing, onSaved, availableC
           openingHours: editing.openingHours || "",
           entryFee: editing.entryFee || "",
           tags: editing.tags || [],
-          featured: editing.featured ?? false,
+          // Fix: Ensure we extract a strict boolean value even if API sends stringified true/false
+          featured: editing.featured === true || String(editing.featured) === "true",
           priority: editing.priority || 1,
           status: editing.status || "active",
         });
@@ -286,7 +286,9 @@ export default function PlaceModal({ open, onClose, editing, onSaved, availableC
         toast.success("Destination published successfully.");
       }
       setIsDirty(false);
-      onSaved();
+      
+      // Await the grid refresh BEFORE closing the modal so data stays consistent
+      await onSaved();
       onClose();
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Save failed.");
