@@ -42,37 +42,66 @@ export default function PlaceDetailsPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<boolean>(false);
   const [notFound, setNotFound] = useState<boolean>(false);
+  
+  // Optimization: Instead of storing the function in useCallback and dealing with stale closures, 
+  // we trigger refetches immutably using a retry counter key.
+  const [retryKey, setRetryKey] = useState<number>(0);
 
   const reducedMotion = useReducedMotion();
 
-  const fetchPlaceDetails = useCallback(async () => {
-    if (!slug) return;
-    try {
-      setLoading(true);
-      setError(false);
-      setNotFound(false);
-      const response = await api.get<PlaceApiResponse>(`/api/places/${slug}`);
-      const placeData = response?.place || response?.data;
-
-      if (placeData && placeData.status === "active") {
-        setPlace(placeData);
-      } else {
-        setNotFound(true);
-      }
-    } catch (err: any) {
-      if (err?.status === 404 || err?.message?.includes("404")) {
-        setNotFound(true);
-      } else {
-        setError(true);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [slug]);
-
   useEffect(() => {
-    fetchPlaceDetails();
-  }, [fetchPlaceDetails]);
+    let isMounted = true;
+
+    const loadPlaceData = async () => {
+      // Optimization: Fail-safe ensures we don't get stuck in an infinite skeleton loop
+      if (!slug) {
+        if (isMounted) {
+          setNotFound(true);
+          setLoading(false);
+        }
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(false);
+        setNotFound(false);
+        
+        const response = await api.get<PlaceApiResponse>(`/api/places/${slug}`);
+        
+        // Optimization: Race-condition safety. Prevents stale responses overwriting rapid navigation.
+        if (!isMounted) return;
+
+        const placeData = response?.place || response?.data;
+
+        if (placeData && placeData.status === "active") {
+          setPlace(placeData);
+        } else {
+          setNotFound(true);
+        }
+      } catch (err: any) {
+        if (!isMounted) return;
+        
+        if (err?.status === 404 || err?.message?.includes("404")) {
+          setNotFound(true);
+        } else {
+          setError(true);
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    loadPlaceData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [slug, retryKey]);
+
+  const handleRetry = useCallback(() => {
+    setRetryKey((prev) => prev + 1);
+  }, []);
 
   const validGalleryImages = useMemo(() => {
     if (!place?.galleryImages) return [];
@@ -89,6 +118,7 @@ export default function PlaceDetailsPage() {
     setCurrentIndex,
   } = useGallery(validGalleryImages.length);
 
+  // Instant replacement transitions
   if (loading) return <PlaceDetailsLoading />;
 
   if (notFound || !place) {
@@ -104,14 +134,15 @@ export default function PlaceDetailsPage() {
     return (
       <main className="min-h-screen flex flex-col bg-[#F8FCFF]">
         <Navbar />
-        <ErrorState onRetry={fetchPlaceDetails} />
+        <ErrorState onRetry={handleRetry} />
       </main>
     );
   }
 
   return (
     <main
-      className="min-h-screen flex flex-col pb-24 md:pb-24 select-none overflow-x-hidden"
+      // Optimization: Removed 'select-none' enabling users to copy content/addresses natively.
+      className="min-h-screen flex flex-col pb-24 overflow-x-hidden"
       style={{
         background: `linear-gradient(180deg, ${TOKENS.bgMain} 0%, ${TOKENS.bgSecondary} 100%)`,
       }}
@@ -141,7 +172,9 @@ export default function PlaceDetailsPage() {
       />
 
       <PlaceVideo videoUrl={place.video} reducedMotion={reducedMotion} />
+      
       <PlaceMap place={place} reducedMotion={reducedMotion} />
+      
       <PlaceTags tags={place.tags} />
 
       <StickyActionBar
