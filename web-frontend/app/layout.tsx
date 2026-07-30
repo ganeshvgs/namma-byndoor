@@ -20,26 +20,39 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://nammabyndoor.vercel
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+
   title: {
     default: "Byndoor, Karnataka | Places to Visit & Explore | Namma Byndoor",
-    template: "%s | Namma Byndoor", 
+    template: "%s | Namma Byndoor",
   },
-  description: "Discover Byndoor (Baindur), Karnataka. Explore places to visit, including beaches, waterfalls, temples, and destinations across the Western Ghats and coastal region.",
+
+  description:
+    "Discover Byndoor (Baindur), Karnataka. Explore places to visit, including beaches, waterfalls, temples, and destinations across the Western Ghats and coastal region.",
+
+  // Google Search Console verification
+  verification: {
+    google: "YOUR_CODE_HERE",
+  },
+
   alternates: {
     canonical: "/",
   },
+
   openGraph: {
     title: "Byndoor, Karnataka | Places to Visit & Explore",
-    description: "Discover Byndoor (Baindur), Karnataka. Explore places to visit, including beaches, waterfalls, temples, and destinations across the Western Ghats and coastal region.",
+    description:
+      "Discover Byndoor (Baindur), Karnataka. Explore places to visit, including beaches, waterfalls, temples, and destinations across the Western Ghats and coastal region.",
     url: siteUrl,
     siteName: "Namma Byndoor",
     locale: "en_IN",
     type: "website",
   },
+
   twitter: {
     card: "summary_large_image",
     title: "Byndoor, Karnataka | Places to Visit & Explore",
-    description: "Discover Byndoor (Baindur), Karnataka. Explore places to visit across the region.",
+    description:
+      "Discover Byndoor (Baindur), Karnataka. Explore places to visit across the region.",
   },
 };
 
@@ -53,6 +66,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: noFoucScript }} />
       </head>
+      <meta name="google-site-verification" content="xxFLwGLruxOUqUPA4ufYKhFHXAh7aRpNzLgOR5ogHC4" />
       <body suppressHydrationWarning>
         <LoaderProvider>
           <div id="main-content">
