@@ -2,6 +2,7 @@ import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import FeaturedPlaces from "./components/FeaturedPlaces";
 import CategoryWisePlaces from "./components/CategoryWisePlaces";
+import CoontactForm from "./contact/page";
 import Footer from "./components/Footer";
 
 export default function Page() {

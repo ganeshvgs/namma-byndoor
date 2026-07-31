@@ -20,7 +20,7 @@ const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Places", href: "/places" },
   { label: "About", href: "/about" },
-  { label: "Contact", href: "#" },
+  { label: "Contact", href: "/contact" },
 ];
 
 function AnimatedMapLogo() {
