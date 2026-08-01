@@ -1,8 +1,7 @@
-// path : web-frontend/robots.ts
 import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://nammabyndoor.vercel.app";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vercel.app";
 
   return {
     rules: {
@@ -11,7 +10,7 @@ export default function robots(): MetadataRoute.Robots {
       disallow: [
         '/admin/', 
         '/api/',
-        '/login' // Prevents indexing login/admin forms
+        '/login'
       ], 
     },
     sitemap: `${siteUrl}/sitemap.xml`,

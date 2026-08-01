@@ -1,11 +1,7 @@
 import { MetadataRoute } from "next";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  "https://nammabyndoor.vercel.app";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://vercel.app";
 
 interface SitemapPlace {
   slug?: string;
@@ -22,7 +18,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1.0,
     },
     {
-      // Searchable/filterable Places page
       url: `${SITE_URL}/places`,
       changeFrequency: "daily",
       priority: 0.9,
@@ -47,18 +42,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     );
 
     if (!res.ok) {
-      console.error(
-        `Failed to fetch featured places for sitemap: ${res.status}`
-      );
-
+      console.error(`Failed to fetch featured places for sitemap: ${res.status}`);
       return staticRoutes;
     }
 
     const data = await res.json();
-
-    // Support either API response format.
-    const places: SitemapPlace[] =
-      data.data || data.places || [];
+    const places: SitemapPlace[] = data.data || data.places || [];
 
     featuredRoutes = places
       .filter(
@@ -75,21 +64,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           priority: 0.8,
         };
 
-        // Only add lastModified when MongoDB supplied a valid timestamp.
-        if (
-          place.updatedAt &&
-          !Number.isNaN(Date.parse(place.updatedAt))
-        ) {
+        if (place.updatedAt && !Number.isNaN(Date.parse(place.updatedAt))) {
           route.lastModified = new Date(place.updatedAt);
         }
 
         return route;
       });
   } catch (error) {
-    console.error(
-      "Failed to generate featured destination sitemap:",
-      error
-    );
+    console.error("Failed to generate featured destination sitemap:", error);
   }
 
   return [...staticRoutes, ...featuredRoutes];

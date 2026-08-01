@@ -2,6 +2,8 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { FormEvent, useState } from "react";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 // The exact map path used across the Namma Byndoor brand
 const MAP_PATH =
   "M 43 2 L 52 14 L 62 25 L 85 18 L 105 28 L 128 32 L 138 45 L 148 55 L 165 52 L 182 72 L 188 95 L 175 105 L 185 118 L 168 120 L 155 108 L 138 102 L 125 112 L 105 102 L 85 115 L 70 110 L 58 100 L 52 122 L 45 125 L 40 105 L 30 90 Z";
@@ -26,6 +28,7 @@ export default function ContactPage() {
 
   return (
     <>
+      <Navbar />
       {/* ─── 1. HERO SECTION ─── */}
       <section className="relative w-full pt-40 pb-20 md:pt-48 md:pb-28 px-6 md:px-12 lg:px-24 bg-gradient-to-b from-[#F8FCFF] to-white overflow-hidden">
         
@@ -214,6 +217,7 @@ export default function ContactPage() {
           </motion.div>
         </div>
       </section>
+      <Footer />
     </>
   );
 }

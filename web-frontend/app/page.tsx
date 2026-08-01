@@ -2,11 +2,10 @@ import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import FeaturedPlaces from "./components/FeaturedPlaces";
 import CategoryWisePlaces from "./components/CategoryWisePlaces";
-import CoontactForm from "./contact/page";
 import Footer from "./components/Footer";
 
 export default function Page() {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://nammabyndoor.vercel.app";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vercel.app";
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -14,6 +13,16 @@ export default function Page() {
     "name": "Namma Byndoor",
     "url": siteUrl,
     "description": "Tourism and place-discovery platform for Byndoor, Karnataka, India.",
+    // ✅ Added high-volume keywords to link spelling alternatives in search indices
+    "keywords": [
+      "Byndoor",
+      "Baindur",
+      "Byndoor Tourism",
+      "Baindur Places to visit",
+      "Namma Byndoor",
+      "Byndoor Beach",
+      "Byndoor Karnataka"
+    ],
     "about": {
       "@type": "Place",
       "name": "Byndoor",
