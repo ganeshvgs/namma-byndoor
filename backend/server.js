@@ -60,7 +60,7 @@ app.use(
 
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://byndoor.kundapura.in/",
+  "https://byndoor.kundapura.in",
   "https://www.byndoor.kundapura.in",
   "https://nammabyndoor.vercel.app",
 ];
