@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://vercel.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://byndoor.kundapura.in";
 
 interface SitemapPlace {
   slug?: string;

@@ -1,3 +1,4 @@
+//path web-frontend/app/about/layout.tsx
 import { Metadata } from "next";
 
 export const metadata: Metadata = {

@@ -1,10 +1,12 @@
+//path web-frontend/app/places/[slug]/page.tsx
+
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import PlaceClient from "./PlaceClient";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://nammabyndoor.vercel.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://byndoor.kundapura.in";
 
 // React 19 cache() deduplicates requests made during the same server render pass
 const getPlace = cache(async (slug: string) => {
