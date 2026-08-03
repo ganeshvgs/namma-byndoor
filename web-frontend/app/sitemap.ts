@@ -1,78 +1,80 @@
 import { MetadataRoute } from "next";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://byndoor.kundapura.in";
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://byndoor.kundapura.in";
 
 interface SitemapPlace {
   slug?: string;
   updatedAt?: string;
   status?: string;
-  featured?: boolean;
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const staticRoutes: MetadataRoute.Sitemap = [
+  const now = new Date();
+
+  const routes: MetadataRoute.Sitemap = [
     {
       url: SITE_URL,
+      lastModified: now,
       changeFrequency: "weekly",
-      priority: 1.0,
+      priority: 1,
     },
     {
       url: `${SITE_URL}/places`,
-      changeFrequency: "daily",
+      lastModified: now,
+      changeFrequency: "weekly",
       priority: 0.9,
     },
     {
       url: `${SITE_URL}/about`,
+      lastModified: now,
       changeFrequency: "monthly",
-      priority: 0.8,
+      priority: 0.7,
     },
   ];
 
-  let featuredRoutes: MetadataRoute.Sitemap = [];
-
   try {
     const res = await fetch(
-      `${API_URL}/api/places?status=active&featured=true&sort=priority&limit=100`,
+      `${API_URL}/api/places?status=active&limit=1000`,
       {
         next: {
-          revalidate: 3600,
+          revalidate: 3600, // Regenerate sitemap every hour
         },
       }
     );
 
     if (!res.ok) {
-      console.error(`Failed to fetch featured places for sitemap: ${res.status}`);
-      return staticRoutes;
+      console.error(`Sitemap fetch failed: ${res.status}`);
+      return routes;
     }
 
     const data = await res.json();
-    const places: SitemapPlace[] = data.data || data.places || [];
 
-    featuredRoutes = places
+    const places: SitemapPlace[] =
+      data?.data || data?.places || [];
+
+    const dynamicRoutes: MetadataRoute.Sitemap = places
       .filter(
         (place) =>
           place.status === "active" &&
-          place.featured === true &&
           typeof place.slug === "string" &&
           place.slug.trim().length > 0
       )
-      .map((place) => {
-        const route: MetadataRoute.Sitemap[number] = {
-          url: `${SITE_URL}/places/${place.slug}`,
-          changeFrequency: "weekly",
-          priority: 0.8,
-        };
+      .map((place) => ({
+        url: `${SITE_URL}/places/${place.slug}`,
+        lastModified: place.updatedAt
+          ? new Date(place.updatedAt)
+          : now,
+        changeFrequency: "weekly",
+        priority: 0.8,
+      }));
 
-        if (place.updatedAt && !Number.isNaN(Date.parse(place.updatedAt))) {
-          route.lastModified = new Date(place.updatedAt);
-        }
-
-        return route;
-      });
+    return [...routes, ...dynamicRoutes];
   } catch (error) {
-    console.error("Failed to generate featured destination sitemap:", error);
+    console.error("Failed to generate sitemap:", error);
+    return routes;
   }
-
-  return [...staticRoutes, ...featuredRoutes];
 }

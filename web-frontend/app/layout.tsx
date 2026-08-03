@@ -30,10 +30,7 @@ export const metadata: Metadata = {
     "Discover Byndoor (Baindur), Karnataka. Explore places to visit, including beaches, waterfalls, temples, and destinations across the Western Ghats and coastal region.",
 
   // ✅ Fixed native integration with Google Search Console
-  verification: {
-    google: "xxFLwGLruxOUqUPA4ufYKhFHXAh7aRpNzLgOR5ogHC4",
-  },
-
+ 
   alternates: {
     canonical: "/",
   },
