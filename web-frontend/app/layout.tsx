@@ -5,14 +5,26 @@ import { LoaderProvider } from "./providers/LoaderProvider";
 const noFoucScript = `
 (function () {
   try {
-    var visited = sessionStorage.getItem("namma-byndoor-loaded");
-    if (!visited) {
-      sessionStorage.setItem("namma-byndoor-loaded", "1");
-      if (window.location.pathname === "/") {
-        document.documentElement.classList.add("is-loading");
-      }
+    // Only run on the homepage
+    if (window.location.pathname !== "/") return;
+
+    var navigationEntries = performance.getEntriesByType("navigation");
+    var navigation = navigationEntries.length
+      ? navigationEntries[0]
+      : null;
+
+    var navigationType =
+      navigation && navigation.type ? navigation.type : "navigate";
+
+    // Show loader only on fresh visits and refreshes.
+    // Skip browser history restores (BFCache).
+    if (navigationType === "navigate" || navigationType === "reload") {
+      document.documentElement.classList.add("is-loading");
     }
-  } catch (e) {}
+  } catch (e) {
+    // Fallback for older browsers
+    document.documentElement.classList.add("is-loading");
+  }
 })();
 `;
 

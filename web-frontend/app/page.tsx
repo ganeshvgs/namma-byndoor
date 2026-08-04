@@ -5,7 +5,8 @@ import CategoryWisePlaces from "./components/CategoryWisePlaces";
 import Footer from "./components/Footer";
 
 export default function Page() {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vercel.app";
+  const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://byndoor.kundapura.in";
 
   const jsonLd = {
     "@context": "https://schema.org",
