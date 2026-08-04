@@ -1,3 +1,4 @@
+//path web-frontend/app/components/Hero.tsx
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
@@ -124,6 +125,14 @@ const HeroOverlay = memo(() => {
             Discover
           </span>
         </motion.div>
+        <motion.h1
+  variants={itemVariants}
+  className="mb-6 max-w-5xl text-center text-white font-extrabold leading-tight drop-shadow-lg
+             text-4xl sm:text-5xl md:text-6xl lg:text-7xl"
+>
+  Explore Byndoor{" "}
+  <span className="text-sky-300">(Baindur)</span>, Karnataka
+</motion.h1>
 
       
 
