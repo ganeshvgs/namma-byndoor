@@ -5,8 +5,16 @@ import { LoaderProvider } from "./providers/LoaderProvider";
 const noFoucScript = `
 (function () {
   try {
-    // Only run on the homepage
-    if (window.location.pathname !== "/") return;
+    var path = window.location.pathname;
+
+    // Show loader only on these pages
+    var allowedPages = [
+      "/",
+      "/about",
+      "/places"
+    ];
+
+    if (!allowedPages.includes(path)) return;
 
     var navigationEntries = performance.getEntriesByType("navigation");
     var navigation = navigationEntries.length
@@ -14,15 +22,18 @@ const noFoucScript = `
       : null;
 
     var navigationType =
-      navigation && navigation.type ? navigation.type : "navigate";
+      navigation && navigation.type
+        ? navigation.type
+        : "navigate";
 
-    // Show loader only on fresh visits and refreshes.
-    // Skip browser history restores (BFCache).
-    if (navigationType === "navigate" || navigationType === "reload") {
+    // Show loader on fresh visit and refresh
+    if (
+      navigationType === "navigate" ||
+      navigationType === "reload"
+    ) {
       document.documentElement.classList.add("is-loading");
     }
   } catch (e) {
-    // Fallback for older browsers
     document.documentElement.classList.add("is-loading");
   }
 })();
