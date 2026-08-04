@@ -8,6 +8,7 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { api } from "../lib/api";
 import Navbar from "../components/Navbar";
 import PlacesLoading from "./loading";
+import { useLoader } from "../providers/LoaderProvider";
 
 // ============================================================================
 // TYPES
@@ -152,6 +153,7 @@ export default function PlacesPage() {
   const [sortBy, setSortBy] = useState("priority");
   
   const reducedMotion = useReducedMotion();
+  const { markVideoReady } = useLoader();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -231,7 +233,15 @@ export default function PlacesPage() {
 
       {/* Hero Section */}
       <section className="relative w-full h-[45vh] min-h-[380px] bg-slate-900 overflow-hidden select-none">
-        <Image src={categories[0]?.coverImage || "/images/placeholder-place.jpg"} alt="Explore Byndoor" fill sizes="100vw" priority className="object-cover opacity-50" />
+     <Image
+  src={categories[0]?.coverImage || "/images/placeholder-place.jpg"}
+  alt="Explore Byndoor"
+  fill
+  sizes="100vw"
+  priority
+  className="object-cover opacity-50"
+  onLoadingComplete={markVideoReady}
+/>
         <div className="absolute inset-0 bg-gradient-to-t from-[#F8FCFF] via-transparent to-[#0F172A]/80" />
         
         <motion.div 

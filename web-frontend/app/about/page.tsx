@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { useLoader } from "../providers/LoaderProvider";
 // ─── Constants & Assets ────────────────────────────────────────────────────────
 const MAP_PATH =
   "M 43 2 L 52 14 L 62 25 L 85 18 L 105 28 L 128 32 L 138 45 L 148 55 L 165 52 L 182 72 L 188 95 L 175 105 L 185 118 L 168 120 L 155 108 L 138 102 L 125 112 L 105 102 L 85 115 L 70 110 L 58 100 L 52 122 L 45 125 L 40 105 L 35 75 L 28 50 L 22 28 L 32 18 Z";
@@ -49,6 +50,7 @@ const journeyChapters = [
 // ─── Helper Components ────────────────────────────────────────────────────────
 const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => {
   const prefersReducedMotion = useReducedMotion();
+  
   return (
     <motion.div
       initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 15 }}
@@ -65,7 +67,7 @@ const FadeIn = ({ children, delay = 0, className = "" }: { children: React.React
 // ─── Main Page Component ─────────────────────────────────────────────────────
 export default function AboutPage() {
   const prefersReducedMotion = useReducedMotion();
-
+const { markVideoReady } = useLoader();
   return (
     <>
       <Navbar />
@@ -77,15 +79,16 @@ export default function AboutPage() {
           <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-white/90 via-white/40 to-transparent z-10 pointer-events-none" aria-hidden="true" />
           
           <div className="absolute inset-0 z-0 bg-[#0F172A]">
-            <Image
-              src={IMAGES.beach}
-              alt="Byndoor coastline meeting the sea"
-              fill
-              priority
-              fetchPriority="high"
-              sizes="100vw"
-              className="object-cover"
-            />
+           <Image
+  src={IMAGES.beach}
+  alt="Byndoor coastline meeting the sea"
+  fill
+  priority
+  fetchPriority="high"
+  sizes="100vw"
+  className="object-cover"
+  onLoadingComplete={markVideoReady}
+/>
             <div className="absolute bottom-0 inset-x-0 h-[60svh] bg-gradient-to-t from-[#0F172A]/90 via-[#0F172A]/40 to-transparent" />
           </div>
 
